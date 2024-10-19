@@ -1,9 +1,11 @@
 import { View, Text } from 'react-native';
 
-export default function MainScreen() {
+const Profile = () => {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Strona główna</Text>
+      <Text>Profil użytkownika</Text>
     </View>
   );
-}
+};
+
+export default Profile;

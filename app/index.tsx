@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Alert, StyleSheet, View, AppState, Text } from 'react-native'
 import { supabase } from '../lib/supabase'
 import { Button, Input } from '@rneui/themed'
-import { Link, router } from 'expo-router'
+import { Href, Link, router } from 'expo-router'
 
 // Tells Supabase Auth to continuously refresh the session automatically if
 // the app is in the foreground. When this is added, you will continue to receive
@@ -34,7 +34,7 @@ export default function Auth() {
     } 
     else
     {
-      router.push('/homePage');
+      router.push('/(tabs)/homePage');
 
     }
     setLoading(false)
