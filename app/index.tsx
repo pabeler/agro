@@ -34,7 +34,25 @@ export default function Auth() {
     } 
     else
     {
-      router.push('/(tabs)/homePage');
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        const { data: existingProfile, error: selectError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      /*if (selectError && selectError.code !== 'PGRST116') {
+        console.log('PGRST116');
+      }*/
+      if (existingProfile) {
+        router.push('/(tabs)/homePage');
+      }else{
+        router.push('/onboarding');
+      }
+      //router.push('/(tabs)/homePage');
+      //router.push('/onboarding');
+      
 
     }
     setLoading(false)

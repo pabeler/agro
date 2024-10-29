@@ -3,6 +3,9 @@ import { Alert, StyleSheet, View, AppState } from 'react-native'
 import { supabase } from '../lib/supabase'
 import { Button, Input } from '@rneui/themed'
 import { router } from 'expo-router'
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+
 
 // Tells Supabase Auth to continuously refresh the session automatically if
 // the app is in the foreground. When this is added, you will continue to receive
@@ -30,8 +33,24 @@ export default function Auth() {
       email: email,
       password: password,
     })
-
+    const projectId =
+    Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+    if (!projectId) {
+        alert('Project ID not found');
+        throw new Error('Project ID not found');
+    }
+    const pushTokenString = (
+      await Notifications.getExpoPushTokenAsync({
+        projectId,
+      })
+      ).data;
+      console.log(pushTokenString);
+      
+      
     if (error) Alert.alert(error.message)
+
+
+      
     if (!session) Alert.alert('Please check your inbox for email verification!')
     setLoading(false)
   }

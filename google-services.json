@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "635038685689",
+    "project_id": "agro-8c814",
+    "storage_bucket": "agro-8c814.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:635038685689:android:709c25a657856ec9b54528",
+        "android_client_info": {
+          "package_name": "com.pabeler.agro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiff_Z79jysAw_KKZO6vpsVexgMPsLE_U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
