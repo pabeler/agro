@@ -27,7 +27,7 @@ export default function Auth() {
   async function signUpWithEmail() {
     setLoading(true)
     const {
-      data: { session },
+      data: { session, user },
       error,
     } = await supabase.auth.signUp({
       email: email,
@@ -49,7 +49,21 @@ export default function Auth() {
       
     if (error) Alert.alert(error.message)
 
-
+      if (user) {
+        const { data, error:insertError } = await supabase.from('user_profiles').insert([
+          {
+            id: user.id, // This is the user ID from Supabase
+            expo_push_token: pushTokenString, // Push token
+          },
+        ]);
+    
+        if (insertError) {
+          console.error('Error inserting user profile:', insertError);
+          Alert.alert('Failed to save user profile data');
+        } else {
+          console.log('User profile inserted:', data);
+        }
+      }
       
     if (!session) Alert.alert('Please check your inbox for email verification!')
     setLoading(false)

@@ -67,7 +67,9 @@ const UserEmailScreen = () => {
       ) : (
         <Text style={{ fontSize: 18, marginTop: 10 }}>Ładowanie...</Text>
       )}
-
+      <View style={styles.verticallySpaced}>
+        <Button title="Add product" onPress={()=> router.push('/addProduct')} buttonStyle={styles.button} />
+      </View>
       <View style={styles.verticallySpaced}>
         <Button title="Sign Out" onPress={handleSignOut} buttonStyle={styles.button} />
       </View>

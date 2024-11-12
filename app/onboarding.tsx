@@ -20,14 +20,14 @@ const UserProfileForm = () => {
     }
 
     try {
-      const { error } = await supabase.from('user_profiles').insert([
-        {
-          first_name: firstName,
-          last_name: lastName,
-          phone_number: phoneNumber,
-          id: userId,
-        },
-      ]);
+      const { error } = await supabase
+      .from('user_profiles')
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+        phone_number: phoneNumber,
+      })
+      .eq('id', userId);
       console.log(error);
       if (error) throw error;
 

@@ -45,7 +45,8 @@ export default function Auth() {
       /*if (selectError && selectError.code !== 'PGRST116') {
         console.log('PGRST116');
       }*/
-      if (existingProfile) {
+     
+      if (existingProfile.first_name != null) {
         router.push('/(tabs)/homePage');
       }else{
         router.push('/onboarding');
