@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Alert, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Text, Alert, ScrollView, Image, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Button, Input } from '@rneui/themed';
 import { Href, Link, router } from 'expo-router';
@@ -7,6 +7,7 @@ import { productName } from 'expo-device';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import uuid from 'react-native-uuid';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const addProduct = () => {
   const [title, setTitle] = useState('')
@@ -16,46 +17,43 @@ const addProduct = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);   
   const categories = ['Cereals', 'Spices', 'Vegetables', 'Fruits', 'Dairy', 'Mushrooms'];  
   const [imageUri, setImageUri] = useState<string | null>(null); 
-  const [imagePath, setImagePath] = useState<string | null>(null); 
- 
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const pickImage = async () => {
-    // Ask for permission to access media library
+    
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       Alert.alert("Permission denied", "Permission to access media library is required!");
       return;
     }
   
-    // Open the image picker
+   
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
     });
   
-    // Check if the result is successful and contains the URI
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri); // Explicitly cast `result.uri` to `string`
+      setImageUri(result.assets[0].uri); 
     }
   };
   
   const uploadImage = async () => {
     if (!imageUri) return null;
-    console.log('siema');
+    
     try {
       const response = await fetch(imageUri);
       const arraybuffer = await fetch(imageUri).then((res) => res.arrayBuffer())
 
-      const blob = await response.blob();
-      const imagePath = `image_${Date.now()}_${Math.floor(Math.random() * 1000)}`; // Unique path for the image in storage
+      const imagePath = `image_${Date.now()}_${Math.floor(Math.random() * 1000)}`; 
       console.log('siekkka', response);
       const { error } = await supabase.storage.from('product_images').upload(imagePath, arraybuffer, {
         contentType: 'image/jpeg',
       })
 
       if (error) throw error;
-      console.log('helo', imagePath);
-      // Return the image path
+      
       return imagePath;
     } catch (error) {
       Alert.alert("Error", "Image upload failed.");
@@ -65,7 +63,7 @@ const addProduct = () => {
   };
 
   const handleSubmit = async () => {
-    // Get the current user session
+    
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
 
@@ -74,7 +72,6 @@ const addProduct = () => {
       return;
     }
 
-    // Get category ID for the selected category name
     let selectedCategoryId = 2;
     if(selectedCategory == 'Spices')
       selectedCategoryId = 3;
@@ -123,24 +120,30 @@ const addProduct = () => {
     <KeyboardAvoidingView
     style={{ flex: 1 }}
     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    keyboardVerticalOffset={80} // Adjust as needed for your design
+    keyboardVerticalOffset={80} 
   >
     <ScrollView style={{ padding: 20, paddingBottom: 20 }}>
       <Text style={{ fontSize: 20 }}>Add product:</Text>
       
-
       <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Picker
-            selectedValue={selectedCategory}
-            onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-            style={styles.picker}
-          >
-            <Picker.Item label="Select a category" value={null} />
-            {categories.map((category, index) => (
-              <Picker.Item key={index} label={category} value={category} />
-            ))}
-          </Picker>
-      </View>
+          <Text style={{ fontSize: 16, marginBottom: 8 }}>Expiration Date:</Text>
+          <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+            <Text style={styles.dateText}>{date.toDateString()}</Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) setDate(selectedDate);
+              }}
+            />
+          )}
+        </View>
+
+
       <View style={[styles.verticallySpaced, styles.mt20]}>
       <Input
           label="Product name"
@@ -176,6 +179,19 @@ const addProduct = () => {
           multiline={true} 
           numberOfLines={4} 
         />
+      </View>
+
+      <View style={[styles.verticallySpaced, styles.mt20]}>
+        <Picker
+            selectedValue={selectedCategory}
+            onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+            style={styles.picker}
+          >
+            <Picker.Item label="Select a category" value={null} />
+            {categories.map((category, index) => (
+              <Picker.Item key={index} label={category} value={category} />
+            ))}
+          </Picker>
       </View>
       <View style={styles.verticallySpaced}>
         <Button title="Add image" onPress={pickImage} buttonStyle={styles.button} />
@@ -215,6 +231,10 @@ const styles = StyleSheet.create({
   button2: {   
     borderRadius: 20,
     marginBottom:20,  
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#007AFF',
   },
 });
 
