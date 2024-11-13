@@ -21,7 +21,7 @@ const Screen = () => {
 
           <View style={style.CategoriesLinkContainer}>
             <Text style={style.TextLook}>Categories</Text>
-            <Text style={style.TextLook}><Link href='../register' style={style.LinkLook}>See All</Link></Text>
+            <Text style={style.TextLook}><Link href='../categories' style={style.LinkLook}>See All</Link></Text>
           </View>
 
           <ScrollView style={style.CategoriesIconsScrollContainer} horizontal={true}>
