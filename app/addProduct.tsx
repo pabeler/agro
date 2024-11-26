@@ -1,188 +1,137 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, Alert, ScrollView, Image, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { Button, Input } from '@rneui/themed';
-import { Href, Link, router } from 'expo-router';
-import { productName } from 'expo-device';
+import { Button, Input, Card } from '@rneui/themed';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import uuid from 'react-native-uuid';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
-const addProduct = () => {
-  const [title, setTitle] = useState('')
-  const [price, setPrice] = useState('')
-  const [amount, setAmount] = useState('')
-  const [description, setDescription] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);   
-  const categories = ['Cereals', 'Spices', 'Vegetables', 'Fruits', 'Dairy', 'Mushrooms'];  
-  const [imageUri, setImageUri] = useState<string | null>(null); 
-  const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+const AddProduct = () => {
+  const [title, setTitle] = useState('');
+  const [price, setPrice] = useState('');
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const categories = ['Cereals', 'Spices', 'Vegetables', 'Fruits', 'Dairy', 'Mushrooms'];
+  const [imageUri, setImageUri] = useState<string | null>(null);
+
   const pickImage = async () => {
-    
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert("Permission denied", "Permission to access media library is required!");
+      Alert.alert('Permission denied', 'Permission to access media library is required!');
       return;
     }
-  
-   
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
     });
-  
+
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri); 
+      setImageUri(result.assets[0].uri);
     }
   };
-  
+
   const uploadImage = async () => {
     if (!imageUri) return null;
-    
     try {
       const response = await fetch(imageUri);
-      const arraybuffer = await fetch(imageUri).then((res) => res.arrayBuffer())
+      const arraybuffer = await fetch(imageUri).then((res) => res.arrayBuffer());
 
-      const imagePath = `image_${Date.now()}_${Math.floor(Math.random() * 1000)}`; 
-      console.log('siekkka', response);
+      const imagePath = `image_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
       const { error } = await supabase.storage.from('product_images').upload(imagePath, arraybuffer, {
         contentType: 'image/jpeg',
-      })
+      });
 
       if (error) throw error;
-      
+
       return imagePath;
     } catch (error) {
-      Alert.alert("Error", "Image upload failed.");
+      Alert.alert('Error', 'Image upload failed.');
       console.log(error);
       return null;
     }
   };
 
   const handleSubmit = async () => {
-    
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
 
     if (!userId) {
-      Alert.alert("Error", "User is not logged in.");
-      return;
-    }
-
-    let selectedCategoryId = 2;
-    if(selectedCategory == 'Spices')
-      selectedCategoryId = 3;
-    if(selectedCategory == 'Vegetables')
-      selectedCategoryId = 4;
-    if(selectedCategory == 'Fruits')
-      selectedCategoryId = 5;
-    if(selectedCategory == 'Dairy')
-      selectedCategoryId = 6;
-    if(selectedCategory == 'Mushrooms')
-      selectedCategoryId = 7;
-
-    if (!selectedCategoryId) {
-      Alert.alert("Error", "Please select a valid category.");
+      Alert.alert('Error', 'User is not logged in.');
       return;
     }
 
     const uploadedImagePath = await uploadImage();
 
-    console.log(uploadedImagePath);
     try {
       const { error } = await supabase.from('products').insert([
         {
           product_name: title,
-          category_id: selectedCategoryId,
+          category_id: categories.indexOf(selectedCategory!) + 1,
           price: parseFloat(price),
           stock_quantity: parseFloat(amount),
           seller_id: userId,
-          description: description,
+          description,
           image_path: uploadedImagePath,
         },
       ]);
 
       if (error) throw error;
-      
-      Alert.alert("Success", "Product added successfully!");
+
+      Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to add product.");
+      Alert.alert('Error', 'Failed to add product.');
     }
   };
 
-
-
   return (
     <KeyboardAvoidingView
-    style={{ flex: 1 }}
-    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    keyboardVerticalOffset={80} 
-  >
-    <ScrollView style={{ padding: 20, paddingBottom: 20 }}>
-      <Text style={{ fontSize: 20 }}>Add product:</Text>
-      
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-          <Text style={{ fontSize: 16, marginBottom: 8 }}>Expiration Date:</Text>
-          <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-            <Text style={styles.dateText}>{date.toDateString()}</Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display="default"
-              onChange={(event, selectedDate) => {
-                setShowDatePicker(false);
-                if (selectedDate) setDate(selectedDate);
-              }}
-            />
-          )}
-        </View>
+      style={{ flex: 1, backgroundColor: '#f5f5f5' }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={80}
+    >
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 20 }}>
+        <Text style={styles.header}>Add New Product</Text>
 
 
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-      <Input
-          label="Product name"
-          onChangeText={(text) => setTitle(text)}
-          value={title}
-          autoCapitalize={'none'}
-        />
-      </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input
+        <Card containerStyle={styles.card}>
+          <Input
+            label="Product Name"
+            placeholder="Enter product name"
+            onChangeText={(text) => setTitle(text)}
+            value={title}
+            inputContainerStyle={styles.input}
+          />
+          <Input
             label="Amount (kg)"
+            placeholder="Enter product amount"
             onChangeText={setAmount}
             value={amount}
-            autoCapitalize={'none'}
-            keyboardType="phone-pad"
-        />
-      </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input
+            keyboardType="numeric"
+            inputContainerStyle={styles.input}
+          />
+          <Input
             label="Price"
+            placeholder="Enter price"
             onChangeText={setPrice}
             value={price}
-            autoCapitalize={'none'}
-            keyboardType="phone-pad"
-        />
-      </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input
-          label="Description"
-          onChangeText={setDescription}
-          value={description}
-          autoCapitalize={'none'}
-          multiline={true} 
-          numberOfLines={4} 
-        />
-      </View>
+            keyboardType="numeric"
+            inputContainerStyle={styles.input}
+          />
+          <Input
+            label="Description"
+            placeholder="Enter product description"
+            onChangeText={setDescription}
+            value={description}
+            multiline
+            numberOfLines={4}
+            inputContainerStyle={styles.input}
+          />
 
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Picker
+          <Text style={styles.label}>Category</Text>
+          <Picker
             selectedValue={selectedCategory}
             onValueChange={(itemValue) => setSelectedCategory(itemValue)}
             style={styles.picker}
@@ -192,50 +141,89 @@ const addProduct = () => {
               <Picker.Item key={index} label={category} value={category} />
             ))}
           </Picker>
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Button title="Add image" onPress={pickImage} buttonStyle={styles.button} />
-        {imageUri && <Image source={{ uri: imageUri }} style={{ width: 100, height: 100, marginTop: 10 }} />}
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Button title="Add product" onPress={handleSubmit} buttonStyle={styles.button2} />
-      </View>
-      
-    </ScrollView>
+        </Card>
+
+       
+        <Card containerStyle={styles.card}>
+          <Text style={styles.label}>Product Image</Text>
+          <TouchableOpacity onPress={pickImage} style={styles.imageButton}>
+            <Text style={styles.imageButtonText}>{imageUri ? 'Change Image' : 'Add Image'}</Text>
+          </TouchableOpacity>
+          {imageUri && <Image source={{ uri: imageUri }} style={styles.imagePreview} />}
+        </Card>
+
+        <Button title="Add Product" onPress={handleSubmit} buttonStyle={styles.submitButton} />
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
-    padding: 12,
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 20,
   },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: 'stretch',
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
   },
-  mt20: {
-    marginTop: 20,
+  card: {
+    borderRadius: 10,
+    padding: 15,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 10,
+    color: '#555',
+  },
+  input: {
+    borderBottomColor: '#ccc',
+    borderBottomWidth: 1,
   },
   picker: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: '#ccc',
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  imageButton: {
+    padding: 10,
+    backgroundColor: '#007bff',
     borderRadius: 5,
-    marginBottom: 20,
+    alignItems: 'center',
+    marginVertical: 10,
   },
-  button: {   
-    borderRadius: 20,  
+  imageButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
-  button2: {   
-    borderRadius: 20,
-    marginBottom:20,  
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    marginTop: 10,
+    backgroundColor: '#f0f0f0',
   },
-  dateText: {
-    fontSize: 16,
-    color: '#007AFF',
+  submitButton: {
+    backgroundColor: '#28a745',
+    borderRadius: 5,
+    paddingVertical: 12,
+    marginTop: 20,
   },
 });
 
-export default addProduct;
+export default AddProduct;
