@@ -1,16 +1,76 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {TouchableOpacity, Pressable, ScrollView, StyleSheet, View, Text, Image, TextInput} from 'react-native'
 import { Feather } from '@expo/vector-icons';
+import { useRoute} from '@react-navigation/native';
+import { supabase } from '../lib/supabase';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { priceWithTrailingZerosAndDollar } from '../lib/utils';
 
 const SearchResults = () => {
+  const route: any = useRoute()
+  const navigation = useNavigation<NativeStackNavigationProp<any>>()
+  const { input } = route.params
+  let MAX_RESULTS: number = 10
+  const [items, setItems] = useState<any[] | null>([]);
+  const [searchInput, setSearchInput] = useState(input)
+
+  enum sortByProperty {
+    default = 0,
+    price = 1,
+    category = 2
+  }
+
+  enum sortOrderProperty {
+    ascending = 0,
+    descending = 1
+  }
+
+  let sortBy: sortByProperty = sortByProperty.default
+  let sortOrder: sortOrderProperty = sortOrderProperty.ascending
+
+  const load_data = async (filter: string) => {
+    const searchFilter = '%' + filter + '%'
+    const { data, error } = await supabase.from('products').select('id, product_name, image_path, price, categories (name, id)').or('product_name.ilike.' + searchFilter + ', description.ilike.' + searchFilter).order('created_at', { ascending: false }).limit(MAX_RESULTS)
+    setItems(data)
+  }
+
+  const onSumbitSearch = () => {
+    load_data?.(searchInput)
+  }
+  
+  useEffect(() => {
+    load_data?.(input)
+  }, []);
+
+  const sortByPrice = () => {
+    sortBy = sortByProperty.price
+
+    if(sortOrder == sortOrderProperty.ascending) {
+      sortOrder = sortOrderProperty.descending
+    } else {
+      sortOrder = sortOrderProperty.ascending
+    }
+  }
+
+  const sortByCategory = () => {
+    sortBy = sortByProperty.category
+    
+    if(sortOrder == sortOrderProperty.ascending) {
+      sortOrder = sortOrderProperty.descending
+    } else {
+      sortOrder = sortOrderProperty.ascending
+    }
+  }
+
   return (
     <View>
       <ScrollView style={style.ScrollViewLook}>
         <View style={style.MainContainer}>
           <View style={style.SearchBarContainer}>
-            <Pressable style={style.BackButton}>
+            <Pressable style={style.BackButton} onPress={() => { navigation.goBack() }}>
               <TouchableOpacity>
-              <Feather name='chevron-left' style={style.BackIcon}/>
+                <Feather name='chevron-left' style={style.BackIcon}/>
               </TouchableOpacity>
             </Pressable>
             <View style={style.SearchButton}>
@@ -19,7 +79,11 @@ const SearchResults = () => {
               </TouchableOpacity>
             </View>
             <View style={style.SearchBar}>
-              <TextInput style={style.SearchInput} placeholder='Search for products...'></TextInput>
+              <TextInput style={style.SearchInput}
+              placeholder='Search for products...'
+              value={searchInput}
+              onChangeText={(value) => setSearchInput(value)}
+              onSubmitEditing={onSumbitSearch}></TextInput>
             </View>
           </View>
 
@@ -30,51 +94,58 @@ const SearchResults = () => {
                 <Feather name='chevron-down' style={style.BackIcon}/>
               </TouchableOpacity>
             </Pressable>
-            <Pressable style={style.Sort2}>
+            <Pressable style={style.Sort2} onPress={() => { sortByPrice() }}>
               <Text style={style.SortTextLook}>Price</Text>
               <TouchableOpacity>
                 <Feather name='chevron-down' style={style.BackIcon2}/>
               </TouchableOpacity>
             </Pressable>
-            <Pressable style={style.Sort2}>
+            <Pressable style={style.Sort2} onPress={() => { sortByCategory() }}>
               <Text style={style.SortTextLook}>Category</Text>
               <TouchableOpacity>
                 <Feather name='chevron-down' style={style.BackIcon2}/>
               </TouchableOpacity>
             </Pressable>
           </View>
-          <Text style={style.SearchItemsTextLook}>4 results found</Text>
+          <Text style={style.SearchItemsTextLook}>{items?.length} results found</Text>
 
-          <View style={style.AllItemsContainer}>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/jablko.jpg')}></Image>
-                <Text style={style.TextDescription}>Apples</Text>
-                <Text style={style.TextDescription}>$2.00</Text>
+          { 
+            items!.length > 0 ?
+            (
+              <View style={style.AllItemsContainer}>
+                {
+                  items?.map((item, id) => {
+                    if(item.image_path != null) {
+                      const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+                      
+                      return <View style={style.ItemContainer} key={id}>
+                      <View style={style.Item}>
+                        <Image style={style.ItemImage} source={{ uri: image_url.publicUrl }}></Image>
+                        <Text style={style.TextDescription}>{item.product_name}</Text>
+                        <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                      </View>
+                    </View>
+                    } else {
+                      return <View style={style.ItemContainer} key={id}>
+                      <View style={style.Item}>
+                        <Image style={style.ItemImage} source={require('../assets/samples/question.png')}></Image>
+                        <Text style={style.TextDescription}>{item.product_name}</Text>
+                        <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                      </View>
+                    </View>
+                    }
+                  })
+                }
               </View>
-            </View>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/jablko2.jpg')}></Image>
-                <Text style={style.TextDescription}>Apples</Text>
-                <Text style={style.TextDescription}>$3.00</Text>
+            ) :
+            (
+              <View style={style.SearchFailedContainer}>
+                <Image style={style.SearchFailedImage} source={require('../assets/samples/search.png')}></Image>
+                <Text style={style.SearchFailedLook}>Sorry, we couldn't find any matching result for your search.</Text>
               </View>
-            </View>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/jablko3.jpg')}></Image>
-                <Text style={style.TextDescription}>Apples</Text>
-                <Text style={style.TextDescription}>$1.50</Text>
-              </View>
-            </View>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/jablko4.png')}></Image>
-                <Text style={style.TextDescription}>Apples</Text>
-                <Text style={style.TextDescription}>$2.00</Text>
-              </View>
-            </View>
-          </View>
+            )
+          }
+
         </View>
       </ScrollView>
     </View>
@@ -99,7 +170,8 @@ const style = StyleSheet.create({
    alignItems: 'center',
    justifyContent: 'center',
    marginLeft: 10,
-   marginTop: 10
+   marginTop: 10,
+   zIndex: 1.0
   },
 
   SortContainer:{
@@ -129,7 +201,8 @@ const style = StyleSheet.create({
   },
 
   BackIcon:{
-    fontSize: 20
+    fontSize: 20,
+    zIndex: 0.0
   },
 
   BackIcon2:{
@@ -143,6 +216,15 @@ const style = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     fontStyle: 'italic'
+  },
+
+  SearchFailedLook:{
+    marginHorizontal: 20,
+    marginVertical: 10,
+    fontSize: 25,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    textAlign: 'center'
   },
 
   SortTextLook:{
@@ -166,6 +248,11 @@ const style = StyleSheet.create({
     alignItems: 'center'
   },
 
+  SearchFailedContainer:{
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
+
   Item:{
     paddingBottom: 15,
     margin: 8,
@@ -176,6 +263,11 @@ const style = StyleSheet.create({
   },
 
   ItemImage:{
+    height: 175,
+    width: 175
+  },
+
+  SearchFailedImage:{
     height: 175,
     width: 175
   },

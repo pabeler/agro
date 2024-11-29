@@ -1,64 +1,86 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {TouchableOpacity, Pressable, ScrollView, StyleSheet, View, Text, Image} from 'react-native'
 import { Feather } from '@expo/vector-icons';
+import { useRoute} from '@react-navigation/native';
+import { supabase } from '../lib/supabase';
+import { priceWithTrailingZerosAndDollar } from '../lib/utils';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const CategoryItems = () => {
+  const route: any = useRoute()
+  const navigation = useNavigation<NativeStackNavigationProp<any>>()
+  const { category } = route.params
+  const [items, setItems] = useState<any[] | null>([]);
+  
+  const load_data = async (category: string) => {
+    const { data, error } = await supabase.from('products').select('id, product_name, image_path, price, categories (id, name)').order('created_at', { ascending: false })
+    
+    let tempItems: any[] = []
+    
+    data?.forEach((element, index) => {
+      if('name' in element.categories && element.categories.name != null && typeof element.categories.name == 'string') {
+        if(element.categories.name.toLowerCase() == category.toLowerCase()) {
+          tempItems?.push(element)
+        }
+      }
+    })
+
+    setItems(tempItems)
+  }
+  
+  useEffect(() => {
+    load_data?.(category)
+  }, []);
+  
   return (
     <View>
       <ScrollView style={style.ScrollViewLook}>
         <View style={style.MainContainer}>
-          <Pressable style={style.BackButton}>
+          <Pressable style={style.BackButton} onPress={() => { navigation.goBack() }}>
             <TouchableOpacity>
               <Feather name='chevron-left' style={style.BackIcon}/>
             </TouchableOpacity>
           </Pressable>
 
-          <Text style={style.CategoryItemsTextLook}>Fruits (240)</Text>
+          <Text style={style.CategoryItemsTextLook}>{items?.length} items found in category {category}</Text>
 
-          <View style={style.AllItemsContainer}>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/jablko.jpg')}></Image>
-                <Text style={style.TextDescription}>Apples</Text>
-                <Text style={style.TextDescription}>$2.00</Text>
+          { 
+            items!.length > 0 ?
+            (
+              <View style={style.AllItemsContainer}>
+                {
+                  items?.map((item, id) => {
+                    if(item.image_path != null) {
+                      const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+                    
+                      return <View style={style.ItemContainer} key={id}>
+                        <View style={style.Item}>
+                          <Image style={style.ItemImage} source={{ uri: image_url.publicUrl }}></Image>
+                          <Text style={style.TextDescription}>{item.product_name}</Text>
+                          <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                        </View>
+                      </View>
+                    } else {
+                      return <View style={style.ItemContainer} key={id}>
+                        <View style={style.Item}>
+                          <Image style={style.ItemImage} source={require('../assets/samples/question.png')}></Image>
+                          <Text style={style.TextDescription}>{item.product_name}</Text>
+                          <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                        </View>
+                      </View>
+                    }
+                  })
+                }
               </View>
-            </View>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/gruszka.jpg')}></Image>
-                <Text style={style.TextDescription}>Pears</Text>
-                <Text style={style.TextDescription}>$3.00</Text>
+            ) :
+            (
+              <View style={style.SearchFailedContainer}>
+                <Image style={style.SearchFailedImage} source={require('../assets/samples/search.png')}></Image>
+                <Text style={style.SearchFailedLook}>Sorry, we couldn't find any items in this category.</Text>
               </View>
-            </View>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/winogrono.jpg')}></Image>
-                <Text style={style.TextDescription}>Grapes</Text>
-                <Text style={style.TextDescription}>$1.50</Text>
-              </View>
-            </View>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/pitaja.jpg')}></Image>
-                <Text style={style.TextDescription}>Dragon fruits</Text>
-                <Text style={style.TextDescription}>$2.00</Text>
-              </View>
-            </View>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/oskomian.jpg')}></Image>
-                <Text style={style.TextDescription}>Carambolas</Text>
-                <Text style={style.TextDescription}>$1.00</Text>
-              </View>
-            </View>
-            <View style={style.ItemContainer}>
-              <View style={style.Item}>
-                <Image style={style.ItemImage} source={require('../assets/samples/sliwka.jpg')}></Image>
-                <Text style={style.TextDescription}>Plums</Text>
-                <Text style={style.TextDescription}>$2.50</Text>
-              </View>
-            </View>
-          </View>
+            )
+          }
         </View>
       </ScrollView>
     </View>
@@ -83,11 +105,13 @@ const style = StyleSheet.create({
    alignItems: 'center',
    justifyContent: 'center',
    marginLeft: 10,
-   marginTop: 10
+   marginTop: 10,
+   zIndex: 1.0
   },
 
   BackIcon:{
-    fontSize: 20
+    fontSize: 20,
+    zIndex: 0.0
   },
 
   CategoryItemsTextLook:{
@@ -129,6 +153,25 @@ const style = StyleSheet.create({
     fontStyle: 'italic',
     padding: 2,
     marginHorizontal: 4
+  },
+
+  SearchFailedLook:{
+    marginHorizontal: 20,
+    marginVertical: 10,
+    fontSize: 25,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    textAlign: 'center'
+  },
+
+  SearchFailedContainer:{
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
+
+  SearchFailedImage:{
+    height: 175,
+    width: 175
   }
 })
 

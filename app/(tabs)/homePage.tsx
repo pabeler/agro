@@ -1,8 +1,42 @@
 import { Feather } from '@expo/vector-icons';
 import { Link } from 'expo-router';
+import { useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { supabase } from '../../lib/supabase';
+import { priceWithTrailingZerosAndDollar } from '../../lib/utils';
 
 const Screen = () => {
+  const [searchInput, setSearchInput] = useState("")
+  const [bestsellers, setBestsellets] = useState<any[] | null>([]);
+  const [newItems, setNewItems] = useState<any[] | null>([]);
+  const navigation = useNavigation<NativeStackNavigationProp<any>>()
+
+  const onSumbitSearch = () => {
+    navigation.push("searchResults", {input: searchInput})
+  }
+
+  const navigateToCategory = (category: string) => {
+    navigation.push("categoryItems", {category: category})
+  }
+
+  useEffect(() => {
+    load_data?.()
+  }, []);
+
+  const load_data = async () => {
+    let MAX_RESULTS: number = 5
+    {
+      const { data, error } = await supabase.from('products').select('id, product_name, image_path, price').limit(MAX_RESULTS) //bestsellery
+      setBestsellets(data)
+    }
+    {
+      const { data, error } = await supabase.from('products').select('id, product_name, image_path, price').order('created_at', { ascending: false }).limit(MAX_RESULTS) //nowe
+      setNewItems(data)
+    }
+  }
+  
   return (
     <View>
       <ScrollView style={style.ScrollViewLook}>
@@ -15,7 +49,11 @@ const Screen = () => {
               </TouchableOpacity>
             </View>
             <View style={style.SearchBar}>
-              <TextInput style={style.SearchInput} placeholder='Search for products...'></TextInput>
+              <TextInput style={style.SearchInput}
+              placeholder='Search for products...'
+              value={searchInput}
+              onChangeText={(value) => setSearchInput(value)}
+              onSubmitEditing={onSumbitSearch}></TextInput>
             </View>
           </View>
 
@@ -25,66 +63,84 @@ const Screen = () => {
           </View>
 
           <ScrollView style={style.CategoriesIconsScrollContainer} horizontal={true}>
-            <View style={style.CategoryIcon}>
-              <Image source={require('../../assets/category_icons/wheat.png')}></Image>
-              <Text style={style.TextSmaller}>Cereals</Text>
+            <View style={style.CategoryIconContainer}>
+              <TouchableOpacity style={style.CategoryIcon} onPress={() => {navigateToCategory('cereals')}}>
+                <Image source={require('../../assets/category_icons/wheat.png')}></Image>
+                <Text style={style.TextSmaller}>Cereals</Text>
+              </TouchableOpacity>
             </View>
-            <View style={style.CategoryIcon}>
-              <Image source={require('../../assets/category_icons/potato.png')}></Image>
-              <Text style={style.TextSmaller}>Vegetables</Text>
+            <View style={style.CategoryIconContainer}>
+              <TouchableOpacity style={style.CategoryIcon} onPress={() => {navigateToCategory('vegetables')}}>
+                <Image source={require('../../assets/category_icons/potato.png')}></Image>
+                <Text style={style.TextSmaller}>Vegetables</Text>
+              </TouchableOpacity>
             </View>
-            <View style={style.CategoryIcon}>
-              <Image source={require('../../assets/category_icons/apple.png')}></Image>
-              <Text style={style.TextSmaller}>Fruits</Text>
+            <View style={style.CategoryIconContainer}>
+              <TouchableOpacity style={style.CategoryIcon} onPress={() => {navigateToCategory('fruits')}}>
+                <Image source={require('../../assets/category_icons/apple.png')}></Image>
+                <Text style={style.TextSmaller}>Fruits</Text>
+              </TouchableOpacity>
             </View>
-            <View style={style.CategoryIcon}>
-              <Image source={require('../../assets/category_icons/milk.png')}></Image>
-              <Text style={style.TextSmaller}>Dairy</Text>
+            <View style={style.CategoryIconContainer}>
+              <TouchableOpacity style={style.CategoryIcon} onPress={() => {navigateToCategory('dairy')}}>
+                <Image source={require('../../assets/category_icons/milk.png')}></Image>
+                <Text style={style.TextSmaller}>Dairy</Text>
+              </TouchableOpacity>
             </View>
-            <View style={style.CategoryIcon}>
-              <Image source={require('../../assets/category_icons/sesame.png')}></Image>
-              <Text style={style.TextSmaller}>Spices</Text>
+            <View style={style.CategoryIconContainer}>
+              <TouchableOpacity style={style.CategoryIcon} onPress={() => {navigateToCategory('spices')}}>
+                <Image source={require('../../assets/category_icons/sesame.png')}></Image>
+                <Text style={style.TextSmaller}>Spices</Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
 
           <Text style={style.TextLook}>Bestsellers</Text>
 
           <ScrollView style={style.BestsellersContainer} horizontal={true}>
-            <View style={style.BestsellerView}>
-              <Image style={style.BestsellerImage} source={require('../../assets/samples/ziemniaki.jpg')}></Image>
-              <Text style={style.TextDescription}>Potatoes sack 15 kg</Text>
-              <Text style={style.TextDescription}>$10.00</Text>
-            </View>
-            <View style={style.BestsellerView}>
-              <Image style={style.BestsellerImage} source={require('../../assets/samples/jablko.jpg')}></Image>
-              <Text style={style.TextDescription}>Granny Smith Apples 1 kg</Text>
-              <Text style={style.TextDescription}>$3.00</Text>
-            </View>
-            <View style={style.BestsellerView}>
-              <Image style={style.BestsellerImage} source={require('../../assets/samples/marchewki.jpg')}></Image>
-              <Text style={style.TextDescription}>Carrots sack 5 kg</Text>
-              <Text style={style.TextDescription}>$10.00</Text>
-            </View>
+            {
+              bestsellers?.map((item, id) => {
+                if(item.image_path != null) {
+                  const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+                  
+                  return <View style={style.BestsellerView} key={id}>
+                    <Image style={style.BestsellerImage} source={{ uri: image_url.publicUrl }}></Image>
+                    <Text style={style.TextDescription}>{item.product_name}</Text>
+                    <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                  </View>
+                } else {
+                  return <View style={style.BestsellerView} key={id}>
+                    <Image style={style.BestsellerImage} source={require('../../assets/samples/question.png')}></Image>
+                    <Text style={style.TextDescription}>{item.product_name}</Text>
+                    <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                  </View>
+                }
+              })
+            }
           </ScrollView>
 
           <Text style={style.TextLook}>New in</Text>
 
           <ScrollView style={style.BestsellersContainer} horizontal={true}>
-            <View style={style.BestsellerView}>
-              <Image style={style.BestsellerImage} source={require('../../assets/samples/sliwka.jpg')}></Image>
-              <Text style={style.TextDescription}>Plums</Text>
-              <Text style={style.TextDescription}>$2.00</Text>
-            </View>
-            <View style={style.BestsellerView}>
-              <Image style={style.BestsellerImage} source={require('../../assets/samples/winogrono.jpg')}></Image>
-              <Text style={style.TextDescription}>Grapes</Text>
-              <Text style={style.TextDescription}>$7.00</Text>
-            </View>
-            <View style={style.BestsellerView}>
-              <Image style={style.BestsellerImage} source={require('../../assets/samples/gruszka.jpg')}></Image>
-              <Text style={style.TextDescription}>Pears</Text>
-              <Text style={style.TextDescription}>$10.00</Text>
-            </View>
+            {
+              newItems?.map((item, id) => {
+                if(item.image_path != null) {
+                  const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+                  
+                  return <View style={style.BestsellerView} key={id}>
+                    <Image style={style.BestsellerImage} source={{ uri: image_url.publicUrl }}></Image>
+                    <Text style={style.TextDescription}>{item.product_name}</Text>
+                    <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                  </View>
+                } else {
+                  return <View style={style.BestsellerView} key={id}>
+                    <Image style={style.BestsellerImage} source={require('../../assets/samples/question.png')}></Image>
+                    <Text style={style.TextDescription}>{item.product_name}</Text>
+                    <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                  </View>
+                }
+              })
+            }
           </ScrollView>
         </View>
       </ScrollView>
@@ -164,10 +220,11 @@ const style = StyleSheet.create({
   },
 
   TextDescription:{
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
     fontStyle: 'italic',
-    padding: 2
+    padding: 2,
+    marginHorizontal: 4
   },
 
   LinkLook:{
@@ -188,25 +245,32 @@ const style = StyleSheet.create({
     maxHeight: 70
   },
 
+  CategoryIconContainer:{
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    maxHeight: 70
+  },
+
   BestsellersContainer:{
-    width: '100%',
+    width: '95%',
     marginHorizontal: 20,
     marginTop: 10,
     marginBottom: 10,
-    height: 190
+    height: 210
   },
 
   BestsellerView:{
     flexDirection: 'column',
     backgroundColor: '#D3D3D3',
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     marginHorizontal: 5
   },
 
   BestsellerImage:{
-    maxHeight: 150,
-    maxWidth: 150
+    height: 150,
+    width: 150
   }
 })
 
