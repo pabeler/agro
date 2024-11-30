@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { priceWithTrailingZerosAndDollar } from '../../lib/utils';
+import React from 'react';
 
 const Screen = () => {
   const [searchInput, setSearchInput] = useState("")
@@ -103,17 +104,29 @@ const Screen = () => {
                 if(item.image_path != null) {
                   const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
                   
-                  return <View style={style.BestsellerView} key={id}>
+                  return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
+                    navigation.navigate("productDetails", {
+                      productId: item.id,
+                      productName: item.product_name,
+                      productPrice: item.price,
+                      productImage: item.image_path ? image_url.publicUrl : null,
+                    })}>
                     <Image style={style.BestsellerImage} source={{ uri: image_url.publicUrl }}></Image>
                     <Text style={style.TextDescription}>{item.product_name}</Text>
                     <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
-                  </View>
+                    </TouchableOpacity>
                 } else {
-                  return <View style={style.BestsellerView} key={id}>
+                  return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
+                    navigation.navigate("productDetails", {
+                      productId: item.id,
+                      productName: item.product_name,
+                      productPrice: item.price,
+                      productImage: null,
+                    })}>
                     <Image style={style.BestsellerImage} source={require('../../assets/samples/question.png')}></Image>
                     <Text style={style.TextDescription}>{item.product_name}</Text>
                     <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
-                  </View>
+                    </TouchableOpacity>
                 }
               })
             }
@@ -127,17 +140,29 @@ const Screen = () => {
                 if(item.image_path != null) {
                   const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
                   
-                  return <View style={style.BestsellerView} key={id}>
+                  return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
+                    navigation.navigate("productDetails", {
+                      productId: item.id,
+                      productName: item.product_name,
+                      productPrice: item.price,
+                      productImage: item.image_path ? image_url.publicUrl : null,
+                    })}>
                     <Image style={style.BestsellerImage} source={{ uri: image_url.publicUrl }}></Image>
                     <Text style={style.TextDescription}>{item.product_name}</Text>
                     <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
-                  </View>
+                    </TouchableOpacity>
                 } else {
-                  return <View style={style.BestsellerView} key={id}>
+                  return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
+                    navigation.navigate("productDetails", {
+                      productId: item.id,
+                      productName: item.product_name,
+                      productPrice: item.price,
+                      productImage:  null,
+                    })}>
                     <Image style={style.BestsellerImage} source={require('../../assets/samples/question.png')}></Image>
                     <Text style={style.TextDescription}>{item.product_name}</Text>
                     <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
-                  </View>
+                    </TouchableOpacity>
                 }
               })
             }

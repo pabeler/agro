@@ -54,21 +54,33 @@ const CategoryItems = () => {
                     if(item.image_path != null) {
                       const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
                     
-                      return <View style={style.ItemContainer} key={id}>
+                      return <TouchableOpacity style={style.ItemContainer} key={id} onPress={() => 
+                        navigation.navigate("productDetails", {
+                          productId: item.id,
+                          productName: item.product_name,
+                          productPrice: item.price,
+                          productImage: item.image_path ? image_url.publicUrl : null,
+                        })}>
                         <View style={style.Item}>
                           <Image style={style.ItemImage} source={{ uri: image_url.publicUrl }}></Image>
                           <Text style={style.TextDescription}>{item.product_name}</Text>
                           <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
                         </View>
-                      </View>
+                        </TouchableOpacity>
                     } else {
-                      return <View style={style.ItemContainer} key={id}>
+                      return <TouchableOpacity style={style.ItemContainer} key={id} onPress={() => 
+                        navigation.navigate("productDetails", {
+                          productId: item.id,
+                          productName: item.product_name,
+                          productPrice: item.price,
+                          productImage: null,
+                        })}>
                         <View style={style.Item}>
                           <Image style={style.ItemImage} source={require('../assets/samples/question.png')}></Image>
                           <Text style={style.TextDescription}>{item.product_name}</Text>
                           <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
                         </View>
-                      </View>
+                        </TouchableOpacity>
                     }
                   })
                 }
