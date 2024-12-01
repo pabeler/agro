@@ -9,6 +9,7 @@ const TabsLayout = () => {
         <Tabs.Screen name='homePage'/>
         <Tabs.Screen name='test'/>
         <Tabs.Screen name='userProfile'/>
+        <Tabs.Screen name='userCart'/>
     </Tabs>
   );
 };
