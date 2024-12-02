@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { Button, Input, Card } from '@rneui/themed';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import {GooglePlaceDetail, GooglePlacesAutocomplete} from "react-native-google-places-autocomplete";
+import handlePlaceSelect from "@/lib/maps";
 
 const AddProduct = () => {
   const [title, setTitle] = useState('');
@@ -13,6 +15,7 @@ const AddProduct = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const categories = ['Cereals', 'Spices', 'Vegetables', 'Fruits', 'Dairy', 'Mushrooms'];
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [location, setLocation] = useState(JSON.stringify({}));
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -53,6 +56,17 @@ const AddProduct = () => {
     }
   };
 
+  const handleLocalization = (data: any, details: GooglePlaceDetail | null) => {
+    if (!details) return;
+
+    const res = handlePlaceSelect(data, details);
+    if (res) {
+      setLocation(JSON.stringify(res));
+    } else {
+        Alert.alert('Error', 'Sorry, we could not get your address. Please try again.');
+    }
+  }
+
   const handleSubmit = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
@@ -65,6 +79,8 @@ const AddProduct = () => {
     const uploadedImagePath = await uploadImage();
 
     try {
+      const locationObj = JSON.parse(location);
+      const { city, street, houseNumber, postalCode, country, lat, lng } = locationObj;
       const { error } = await supabase.from('products').insert([
         {
           product_name: title,
@@ -74,10 +90,20 @@ const AddProduct = () => {
           seller_id: userId,
           description,
           image_path: uploadedImagePath,
+          pickup_address: JSON.stringify({
+            city,
+            street,
+            house_number: houseNumber,
+            postal_code: postalCode,
+            country,
+            cords: { lat, lng },
+          }),
         },
       ]);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
@@ -143,7 +169,7 @@ const AddProduct = () => {
           </Picker>
         </Card>
 
-       
+
         <Card containerStyle={styles.card}>
           <Text style={styles.label}>Product Image</Text>
           <TouchableOpacity onPress={pickImage} style={styles.imageButton}>
@@ -152,7 +178,16 @@ const AddProduct = () => {
           {imageUri && <Image source={{ uri: imageUri }} style={styles.imagePreview} />}
         </Card>
 
-        <Button title="Add Product" onPress={handleSubmit} buttonStyle={styles.submitButton} />
+        <Card containerStyle={styles.card}>
+          <Text style={styles.label}>Pickup localization</Text>
+          <GooglePlacesAutocomplete placeholder={"Your address"} disableScroll={true}
+                                    query={{key: "AIzaSyB3B8DlxEr1Ij1fVGeOv1mtF5N8JVDsti4", language: 'en'}}
+                                    fetchDetails={true}
+                                    onPress={handleLocalization}
+          />
+        </Card>
+
+        <Button title="Add Product" onPress={handleSubmit} buttonStyle={[styles.submitButton, styles.mb20]} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -187,6 +222,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 10,
     color: '#555',
+  },
+  mb20: {
+    marginBottom: 20,
   },
   input: {
     borderBottomColor: '#ccc',
