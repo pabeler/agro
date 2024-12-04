@@ -7,6 +7,18 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { priceWithTrailingZerosAndDollar } from '../lib/utils';
 
+enum sortByProperty {
+  newest = 0,
+  lowest_price = 1,
+  highest_price = 2
+}
+
+let sortByForLoad: sortByProperty = sortByProperty.newest
+let usePriceFilterForLoad: boolean = false
+let lowestPriceForLoad: number | null = null
+let highestPriceForLoad: number | null = null
+let categoryForLoad: string = ''
+
 const SearchResults = () => {
   const route: any = useRoute()
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
@@ -18,28 +30,23 @@ const SearchResults = () => {
   const [openPriceRangeModal, setOpenPriceRangeModal] = useState(false)
   const [highestPriceInput, setHighestPriceInput] = useState('')
   const [lowestPriceInput, setLowestPriceInput] = useState('')
-
-  enum sortByProperty {
-    newest = 0,
-    lowest_price = 1,
-    highest_price = 2
-  }
-
-  let MAX_RESULTS: number = 30
   const [sortBy, setSortBy] = useState(sortByProperty.newest)
   const [usePriceFilter, setUsePriceFilter] = useState(false)
   const [lowestPrice, setLowestPrice] = useState<null | number>(null)
   const [highestPrice, setHighestPrice] = useState<null | number>(null)
   const [category, setCategory] = useState<string>('')
+  const MAX_RESULTS: number = 30
 
   const load_data = async (filter: string) => {
+    console.log('sort', sortByForLoad, 'usePriceFilter', usePriceFilterForLoad, 'lowest', lowestPriceForLoad, 'highest', highestPriceForLoad, 'category', categoryForLoad, '|')
+    
     const searchFilter = '%' + filter + '%'
-    const categoryFilter = '%' + category + '%'
+    const categoryFilter = '%' + categoryForLoad + '%'
 
     let sortByFilter: string = ''
     let sortByOrder: boolean = false
 
-    switch(sortBy as sortByProperty) {
+    switch(sortByForLoad as sortByProperty) {
       case sortByProperty.newest: {
         sortByFilter = 'created_at'
         sortByOrder = false
@@ -57,7 +64,7 @@ const SearchResults = () => {
       }
     }
     
-    if(usePriceFilter == false) {
+    if(usePriceFilterForLoad == false) {
       const { data, error } = await supabase.from('products')
       .select('id, product_name, image_path, price, categories (name, id)')
       .or('product_name.ilike.' + searchFilter + ', description.ilike.' + searchFilter)
@@ -85,8 +92,8 @@ const SearchResults = () => {
       .select('id, product_name, image_path, price, categories (name, id)')
       .or('product_name.ilike.' + searchFilter + ', description.ilike.' + searchFilter)
       .ilike('categories.name', categoryFilter)
-      .gte('price', lowestPrice)
-      .lte('price', highestPrice)
+      .gte('price', lowestPriceForLoad)
+      .lte('price', highestPriceForLoad)
       .order(sortByFilter, { ascending: sortByOrder })
       .limit(MAX_RESULTS)
 
@@ -117,15 +124,14 @@ const SearchResults = () => {
 
   const onSetSortOrder = (order: sortByProperty) => {
     setSortBy(order)
+    sortByForLoad = order
     load_data?.(searchInput)
   }
 
   const onSetCategory = (categoryArg: string) => {
-    console.log('the category was:', category, '|, and the argument sent is:', categoryArg, '|')
-    setCategory(categoryArg) //fix...
-    console.log('the category is now:', category, '|')
+    setCategory(categoryArg)
+    categoryForLoad = categoryArg
     load_data?.(searchInput)
-    
   }
 
   const onSetPriceRange = (lowestPriceArg: number | null, highestPriceArg: number | null) => {
@@ -133,10 +139,15 @@ const SearchResults = () => {
       setUsePriceFilter(true)
       setLowestPrice(lowestPriceArg)
       setHighestPrice(highestPriceArg)
+      usePriceFilterForLoad = true
+      lowestPriceForLoad = lowestPriceArg
+      highestPriceForLoad = highestPriceArg
     } else {
       setUsePriceFilter(false)
       setLowestPriceInput('')
       setHighestPriceInput('')
+
+      usePriceFilterForLoad = false
     }
 
     load_data?.(searchInput)

@@ -7,6 +7,8 @@ import { priceWithTrailingZerosAndDollar } from '../../lib/utils';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+let cartId: number | null = null
+
 const UserCart = () => {
   const [cart, setCart] = useState<any | null>(null)
   const [items, setItems] = useState<any[] | null>([])
@@ -16,12 +18,12 @@ const UserCart = () => {
     const { data, error } = await supabase.from('orders').select('id, user_id, status, total_price').eq('user_id', userIdArg).limit(1)
     console.log('cart:', data)
     setCart(data)
-    console.log(cart)
+    cartId = data![0].id
   }
 
   const load_data = async () => {
-    if(cart != null) {
-      const { data, error } = await supabase.from('order_items').select('id, product_id, quantity, total_price, products( price, image_path, product_name, stock_quantity )').eq('order_id', cart[0].id)
+    if(cartId != null) {
+      const { data, error } = await supabase.from('order_items').select('id, product_id, quantity, total_price, products( price, image_path, product_name, stock_quantity )').eq('order_id', cartId)
       console.log('itemssss:', data)
       setItems(data)
     }
