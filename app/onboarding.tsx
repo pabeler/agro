@@ -1,17 +1,27 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, Alert, StyleSheet, ScrollView} from 'react-native';
-import {Button, Input} from '@rneui/themed'
+import {Button, Card, Input} from '@rneui/themed'
 import {supabase} from '../lib/supabase';
 import {router} from 'expo-router'
 import {GooglePlaceDetail, GooglePlacesAutocomplete} from "react-native-google-places-autocomplete";
 import 'react-native-get-random-values';
 import handlePlaceSelect from "@/lib/maps";
+import {useNavigation} from "@react-navigation/native";
 
 const UserProfileForm = () => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [location, setLocation] = useState(JSON.stringify({}));
+
+    const navigation = useNavigation();
+
+    useEffect(() => {
+        navigation.setOptions({
+            headerTitle: 'Fill your user profile',
+            headerBackVisible: false,
+        });
+    }, []);
 
     const handleSubmit = async () => {
         // Get the current user session
@@ -77,26 +87,23 @@ const UserProfileForm = () => {
     return (
 
         <ScrollView style={styles.container}>
-            <Text style={styles.headerText}>
-                Please fill your profile details
-            </Text>
-            <View style={[styles.verticallySpaced]}>
+            <Card>
                 <Input
                     label="First name"
                     onChangeText={setFirstName}
                     value={firstName}
                     autoCapitalize={'none'}
                 />
-            </View>
-            <View style={[styles.verticallySpaced]}>
+            </Card>
+            <Card>
                 <Input
                     label="Last name"
                     onChangeText={setLastName}
                     value={lastName}
                     autoCapitalize={'none'}
                 />
-            </View>
-            <View style={[styles.verticallySpaced]}>
+            </Card>
+            <Card>
                 <Input
                     label="Phone number"
                     onChangeText={setPhoneNumber}
@@ -104,24 +111,21 @@ const UserProfileForm = () => {
                     autoCapitalize={'none'}
                     keyboardType="phone-pad"
                 />
-            </View>
-            <View style={[styles.verticallySpaced, styles.mh10]}>
-                <Text style={styles.localizationInputLabel}>Insert your address: </Text>
+            </Card>
+            <Card>
+                <Text style={styles.localizationInputLabel}>Insert your address</Text>
                 <GooglePlacesAutocomplete placeholder={"Your address"} disableScroll={true}
-                                          query={{key: "AIzaSyB3B8DlxEr1Ij1fVGeOv1mtF5N8JVDsti4", language: 'en'}}
+                                          query={{key: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY, language: 'en'}}
                                           fetchDetails={true}
                                           onPress={handleLocalization}
                 />
-            </View>
-            <View style={[styles.verticallySpaced, styles.mb20]}>
-                <Button title="Save profile" onPress={handleSubmit} buttonStyle={styles.button}/>
-            </View>
+            </Card>
+            <Button title="Save profile" onPress={handleSubmit} buttonStyle={styles.button}/>
         </ScrollView>
     );
 };
 const styles = StyleSheet.create({
     container: {
-        marginTop: 40,
         padding: 12,
     },
     verticallySpaced: {
@@ -137,6 +141,9 @@ const styles = StyleSheet.create({
     },
     button: {
         borderRadius: 20,
+        marginHorizontal: 15,
+        marginTop: 20,
+        marginBottom: 20,
     },
     headerText: {
         fontSize: 24,
@@ -148,6 +155,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'rgb(119,136,153)',
         marginBottom: 8,
+        marginLeft: 10,
     },
 })
 export default UserProfileForm;
