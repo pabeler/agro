@@ -278,14 +278,14 @@ const SearchResults = () => {
               </TouchableOpacity>
             </View>
             <View>
-              <TextInput keyboardType='numeric' placeholder='Set minimal price' value={lowestPriceInput} onChangeText={(value) => setLowestPriceInput(value)}></TextInput>
+              <TextInput style={style.PriceRangeInput} keyboardType='numeric' placeholder='Set minimal price' value={lowestPriceInput} onChangeText={(value) => setLowestPriceInput(value)}></TextInput>
             </View>
             <View>
-              <TextInput keyboardType='numeric' placeholder='Set maximal price' value={highestPriceInput} onChangeText={(value) => setHighestPriceInput(value)}></TextInput>
+              <TextInput style={style.PriceRangeInput} keyboardType='numeric' placeholder='Set maximal price' value={highestPriceInput} onChangeText={(value) => setHighestPriceInput(value)}></TextInput>
             </View>
             <View>
-              <TouchableOpacity onPress={() => {processPriceRangeInput(lowestPriceInput, highestPriceInput)}}>
-                <Text>Set price range!</Text>
+              <TouchableOpacity style={style.PriceButton} onPress={() => {processPriceRangeInput(lowestPriceInput, highestPriceInput)}}>
+                <Text style={style.PriceButtonText}>Confirm price range!</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -643,6 +643,27 @@ const style = StyleSheet.create({
     fontSize: 25,
     color: 'white'
   },
+
+  PriceRangeInput:{
+    fontSize: 22,
+    backgroundColor: '#d3d3d3',
+    color: 'black',
+    margin: 5,
+    padding: 10,
+    borderRadius: 10
+  },
+
+  PriceButton:{
+    backgroundColor: '#8b61ff',
+    margin: 5,
+    padding: 10,
+    borderRadius: 10
+  },
+
+  PriceButtonText:{
+    fontSize: 20,
+    color: 'white'
+  }
 })
 
 export default SearchResults

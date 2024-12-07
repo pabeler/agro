@@ -1,101 +1,137 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
+import { useFocusEffect } from '@react-navigation/native';
 import {TouchableOpacity, Pressable, ScrollView, StyleSheet, View, Text, Image} from 'react-native'
 import { Feather } from '@expo/vector-icons';
-import { useRoute} from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { priceWithTrailingZerosAndDollar } from '../../lib/utils';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-let cartId: number | null = null
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PRODUCTS_STORAGE_KEY, ProductType } from "../../lib/utils";
 
 const UserCart = () => {
-  const [cart, setCart] = useState<any | null>(null)
   const [items, setItems] = useState<any[] | null>([])
   const navigation = useNavigation<NativeStackNavigationProp<any>>()
 
-  const load_cart = async (userIdArg: string) => {
-    const { data, error } = await supabase.from('orders').select('id, user_id, status, total_price').eq('user_id', userIdArg).limit(1)
-    console.log('cart:', data)
-    setCart(data)
-    cartId = data![0].id
-  }
-
   const load_data = async () => {
-    if(cartId != null) {
-      const { data, error } = await supabase.from('order_items').select('id, product_id, quantity, total_price, products( price, image_path, product_name, stock_quantity )').eq('order_id', cartId)
-      console.log('itemssss:', data)
-      setItems(data)
+    const savedProductValues = await AsyncStorage.getItem(PRODUCTS_STORAGE_KEY);
+
+    if(savedProductValues == null) {
+      return
     }
+
+    let productsAsJson = JSON.parse(savedProductValues);
+    let productsIds : number[] = []
+    
+    productsAsJson.forEach((element : ProductType) => {
+      productsIds.push(element.productId)
+    });
+
+    const {data, error} = await supabase.from('products').select('id, price, image_path, product_name, stock_quantity, quantity:price, seller_id').in('id', productsIds)
+    console.log('Data downloaded from table:', data)
+    console.log('Data loaded from disc:', productsAsJson)
+
+    for(let item of data!) {
+      for(let itemWithData of productsAsJson) {
+        if(itemWithData.productId == item.id) {
+          item.quantity = itemWithData.quantity
+          break
+        }
+      }
+    }
+
+    console.log('Data transformed:', data)
+    setItems(data)
   }
 
   const calculate_sum = () => {
     let sum: number = 0
     
     items?.forEach((item) => {
-      sum = sum + item.total_price
+      sum = sum + item.price * item.quantity
     });
 
     return sum
   }
 
-  const remove_all = async () => {
-    return; //not tested
-    //user logged in?
+  const remove_all_items = async () => {
+    await AsyncStorage.removeItem(PRODUCTS_STORAGE_KEY)
+    setItems([])
+  }
+
+  const add_one_item = async (productId: number) => {
+    for(let item of items!) {
+      if(item.id == productId) {
+        item.quantity = Math.min(item.quantity + 1, item.stock_quantity)
+        break
+      }
+    }
+
+    refresh_items()
+    save_items_to_storage()
+  }
+
+  const remove_one_item = async (productId: number) => {
+    for(let item of items!) {
+      if(item.id == productId) {
+        item.quantity = Math.max(item.quantity - 1, 0)
+        break
+      }
+    }
+
+    refresh_items()
+    save_items_to_storage()
+  }
+
+  const save_items_to_storage = async () => {
+    let itemsToSave : ProductType[] = []
+
+    for(let item of items!) {
+      let newProductToSave : ProductType = {} as ProductType
+      newProductToSave.productId = item.id
+      newProductToSave.quantity = item.quantity
+      itemsToSave.push(newProductToSave)
+    }
+
+    let jsonString : string = JSON.stringify(itemsToSave)
+    await AsyncStorage.setItem(PRODUCTS_STORAGE_KEY, jsonString)
+  }
+
+  const refresh_items = async () => {
+    let newData : any[] = []
+
+    for(let item of items!) {
+      if(item.quantity != 0) {
+        newData.push(item)
+      }
+    }
+
+    setItems(newData)
+  }
+
+  const fetchUserData = async () => {
     const { data: { user }, error: authError, } = await supabase.auth.getUser();
 
     if (authError) {
       console.error('Błąd przy pobieraniu użytkownika:', authError);
-      return
-    }
-
-    //does cart exist?
-    const { data : removedCart, error: cartError } = await supabase.from('orders').select('id, user_id, status, total_price').eq('user_id', user?.id).limit(1)
-    console.log('removedCart:', removedCart)
-
-    //items from cart
-    const {data : itemsFromCart, error : itemsFromCartError} = await supabase.from('order_items').select('id, product_id, quantity').eq('order_id', removedCart![0].id)
-    
-    //remove items
-    const {error : removingItemsError} = await supabase.from('order_items').delete().eq('order_id', removedCart![0].id)
-
-    //add quantities from deleted items to products
-    for(let i = 0; i < itemsFromCart!.length; i++)
-    {
-      const {data: productFromDatabase, error: productStockQuantityError} = await supabase.from("products").select('stock_quantity').eq('id', itemsFromCart![i].product_id).limit(1)
-      let newQuantity: number = productFromDatabase![0].stock_quantity + itemsFromCart![i].quantity
-      const {error: addToProductQuantityError} = await supabase.from('products').update({stock_quantity: newQuantity}).eq('id', itemsFromCart![i].product_id)
-    }
-
-    //reload data
-    load_cart?.(user!.id).then(() => {
+    } else if (user) {
       load_data?.()
-    })
-  }
+    }
+  };
 
-  const add_one = async (productId: number) => {
-    //...
-  }
-
-  const remove_one = async (productId: number) => {
-    //...
+  const navigateToCheckout = async () => {
+    navigation.navigate('checkout', { items: items })
   }
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const { data: { user }, error: authError, } = await supabase.auth.getUser();
-
-      if (authError) {
-        console.error('Błąd przy pobieraniu użytkownika:', authError);
-      } else if (user) {
-        load_cart?.(user.id).then(() => {
-          load_data?.()
-        })
-      }
-    };
-
-    fetchUserData();
+    console.log('Downloading data')
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+    }, [])
+  );
   
   return (
     <View>
@@ -120,19 +156,19 @@ const UserCart = () => {
               </View>
               
               <View style={style.LeftContainer}>
-                <Text style={style.RemoveText} onPress={() => {remove_all()}}>Remove All</Text>
+                <Text style={style.RemoveText} onPress={() => {remove_all_items()}}>Remove All</Text>
               </View>
 
               <View>
                 {
                   items?.map((item, id) => {
-                    const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.products.image_path);
+                    const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
                 
                     return <View style={style.ItemView} key={id}>
                       
                       <View style={style.TopRowItem}>
                         {
-                          (item.products.image_path != null) ?
+                          (item.image_path != null) ?
                           (
                             <Image style={style.ItemImage} source={{ uri: image_url.publicUrl }}></Image>
                           ) :
@@ -143,16 +179,16 @@ const UserCart = () => {
                           
                         <View style={style.RowHeader}>
                           <View style={style.TopRowHeader}>
-                            <Text style={style.TextDescription}>{item.products.product_name}</Text>
-                            <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.products.price)}</Text>
+                            <Text style={style.TextDescription}>{item.product_name}</Text>
+                            <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
                           </View>
                           <View style={style.BottomRowHeader}>
                             <Text style={style.BottomTextDescription}>Quantity</Text>
-                            <TouchableOpacity style={style.PlusMinus} onPress={() => {add_one(item.product_id)}}>
+                            <TouchableOpacity style={style.PlusMinus} onPress={() => {add_one_item(item.id)}}>
                               <Feather name='plus' style={style.PlusMinusIcon}/>
                             </TouchableOpacity>
                             <Text style={style.BottomTextDescription}>{item.quantity}</Text>
-                            <TouchableOpacity style={style.PlusMinus} onPress={() => {remove_one(item.product_id)}}>
+                            <TouchableOpacity style={style.PlusMinus} onPress={() => {remove_one_item(item.id)}}>
                               <Feather name='minus' style={style.PlusMinusIcon}/>
                             </TouchableOpacity>
                           </View>
@@ -176,9 +212,9 @@ const UserCart = () => {
                   <Text style={style.FooterMoneyText}>Total</Text>
                   <Text style={style.FooterMoneyText}>{priceWithTrailingZerosAndDollar(calculate_sum())}</Text>
                 </View>
-                <View style={style.CheckoutButtonView}>
+                <TouchableOpacity style={style.CheckoutButtonView} onPress={() => {navigateToCheckout()}}>
                   <Text style={style.CheckoutText}>Checkout</Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
             </View>

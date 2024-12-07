@@ -5,11 +5,13 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  ScrollView
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 import { Button } from "@rneui/themed";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PRODUCTS_STORAGE_KEY, ProductType } from "../lib/utils"
 
 type ProductDetailsRouteParams = {
   productId: string;
@@ -27,41 +29,56 @@ const ProductDetails = () => {
   const [stockQuantity, setStockQuantity] = useState<number | null>(null);
 
   const addToCart = async () => {
-    //user logged in?
-    const { data: { user }, error: authError, } = await supabase.auth.getUser();
+    try {
+      const savedProductValues = await AsyncStorage.getItem(PRODUCTS_STORAGE_KEY);
 
-    if (authError) {
-      console.error('Błąd przy pobieraniu użytkownika:', authError);
-      return
+      if(savedProductValues == null) {
+        let listOfProductsToSave : ProductType[] = []
+        let productToSave : ProductType = {} as ProductType
+        productToSave.productId = Number(productId)
+        productToSave.quantity = quantity
+        listOfProductsToSave.push(productToSave)
+        let jsonString : string = JSON.stringify(listOfProductsToSave)
+        await AsyncStorage.setItem(PRODUCTS_STORAGE_KEY, jsonString)
+        return
+      }
+
+      let listOfProductsToSave : ProductType[] = []
+      let productBeingSavedId : number = Number(productId)
+      let productsAsJson = JSON.parse(savedProductValues);
+      let savedNewElementFlag : boolean = false
+
+      console.log('Old Values:', productsAsJson)
+
+      productsAsJson.forEach((element: ProductType) => {
+        let productIdFromJson : number = element.productId
+        let productQuantityFromJson : number = element.quantity
+
+        if(productIdFromJson == productBeingSavedId) {
+          let newQuantity = Math.min(productQuantityFromJson + quantity, Number(stockQuantity))
+          let newElement : ProductType = {} as ProductType
+          newElement.productId = productIdFromJson
+          newElement.quantity = newQuantity
+          listOfProductsToSave.push(newElement)
+          savedNewElementFlag = true
+        } else {
+          listOfProductsToSave.push(element)
+        }
+      });
+
+      if(!savedNewElementFlag) {
+        let productToSave : ProductType = {} as ProductType
+        productToSave.productId = Number(productId)
+        productToSave.quantity = quantity
+        listOfProductsToSave.push(productToSave)
+      }
+
+      let jsonString : string = JSON.stringify(listOfProductsToSave)
+      await AsyncStorage.setItem(PRODUCTS_STORAGE_KEY, jsonString)
+      console.log('New Values:', jsonString)
+    } catch(error) {
+      console.error(error)
     }
-
-    //does cart exist?
-    const { data : cart, error: cartError } = await supabase.from('orders').select('id, user_id, status, total_price').eq('user_id', user?.id).limit(1)
-    console.log('cart:', cart)
-
-    //create cart if not exists
-    if(cart == null || cart!.length < 1) {
-      console.log('dodaję wózek')
-      const { error: cartInsertError } = await supabase.from('orders').insert({ user_id: user?.id, status: 'unrealized', total_price: 0 })
-    }
-    
-    //do items exist in order items table?
-    const {data: existingItem, error: existingItemError} = await supabase.from("order_items").select('id, product_id, order_id, quantity, total_price').eq('order_id', cart![0].id).eq('product_id', productId)
-
-    if(existingItem == null || existingItem.length < 1) {
-      //items do not exist in database at all, must be inserted
-      const {error: itemInsertError} = await supabase.from("order_items").insert({product_id: productId, order_id: cart![0].id, quantity: quantity, total_price: (Number(productPrice)) * quantity})
-    } else {
-      //items exist, but their quantity must be updated
-      let newQuantity: number = existingItem![0].quantity + quantity
-      let newTotalPrice: number = existingItem![0].total_price + quantity * Number(productPrice)
-      const {error: itemUpdateError} = await supabase.from("order_items").update({quantity: newQuantity, total_price: newTotalPrice}).eq('id', existingItem![0].id)
-    }
-   
-    //get old product quantity
-    const {data: productFromDatabase, error: productStockQuantityError} = await supabase.from("products").select('stock_quantity').eq('id', productId).limit(1)
-    //update product quantity
-    const {error: productStockQuantityUpdateItemError} = await supabase.from("products").update({stock_quantity: productFromDatabase![0].stock_quantity - quantity}).eq('id', productId)
   }
 
   useEffect(() => {
