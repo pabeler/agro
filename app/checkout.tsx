@@ -113,6 +113,8 @@ const checkoutForm = () => {
         }
       );
 
+      console.log("googlepay2")
+
       if (error) {
         Alert.alert(error.code, error.message);
         return;
@@ -127,29 +129,48 @@ const checkoutForm = () => {
   }
 
   const fetchPaymentIntentClientSecret = async () => {
-    let amountForResponse : number = calculate_sum()
+    let amountForResponse: number = calculate_sum();
     const { data: { session } } = await supabase.auth.getSession();
-
-    if (!(session?.user.id)) {
+  
+    if (!session?.user.id) {
+      console.error("No user session found!");
       return;
     }
-
-    const response = await fetch(`https://retbvrtntihuepnbhbdm.supabase.co/functions/v1/stripe-intent`, {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ${session.access_token}',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          currency: 'pln',
-          amount: amountForResponse,
-          items: [{id: 'id'}],
-        }),
-    });
-
-    const {paymentIntent} = await response.json();
-    return paymentIntent;
+  
+    console.log("Fetching payment intent...");
+  
+    try {
+      const response = await fetch(
+        "https://retbvrtntihuepnbhbdm.supabase.co/functions/v1/intent2",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currency: "pln",
+            amount: amountForResponse*100,
+            items: [{ id: "id" }],
+          }),
+        }
+      );
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error from server:", errorData.message);
+        console.log(errorData);
+        return;
+      }
+  
+      const { paymentIntent } = await response.json();
+      console.log("Payment Intent:", paymentIntent);
+      return paymentIntent;
+    } catch (error) {
+      console.error("Fetch error:", error.message);
+    }
   };
+  
   
   useEffect(() => {
     if(goToHomepageFlag) {
