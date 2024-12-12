@@ -5,7 +5,8 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  ScrollView
+  ScrollView, 
+  Alert
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
@@ -30,6 +31,16 @@ const ProductDetails = () => {
 
   const addToCart = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: productCheck, error: errorProductCheck } = await supabase.from('products').select('seller_id').eq('id', Number(productId))
+
+      if('seller_id' in productCheck!) {
+        if(session?.user.id == productCheck!.seller_id) {
+          Alert.alert('Failure', 'You cannot add your own product to your cart!')
+          return
+        }
+      }
+      
       const savedProductValues = await AsyncStorage.getItem(PRODUCTS_STORAGE_KEY);
 
       if(savedProductValues == null) {
@@ -76,6 +87,7 @@ const ProductDetails = () => {
       let jsonString : string = JSON.stringify(listOfProductsToSave)
       await AsyncStorage.setItem(PRODUCTS_STORAGE_KEY, jsonString)
       console.log('New Values:', jsonString)
+      Alert.alert('Success', 'Successfully added product to cart!')
     } catch(error) {
       console.error(error)
     }

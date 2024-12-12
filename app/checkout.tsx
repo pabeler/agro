@@ -18,7 +18,6 @@ const checkoutForm = () => {
   const route = useRoute<RouteProp<{ params: CheckoutRouteParams }, "params">>();
   const { items } = route.params
   const [sum, setSum] = useState(0)
-  const [goToHomepageFlag, setGoToHomepageFlag] = useState(false)
   const {isPlatformPaySupported} = usePlatformPay();
 
   const calculate_sum = () => {
@@ -122,7 +121,7 @@ const checkoutForm = () => {
 
       await AsyncStorage.removeItem(PRODUCTS_STORAGE_KEY)
       Alert.alert('Success', 'Paid for products successfully!')
-      setGoToHomepageFlag(true)
+      navigation.navigate('(tabs)', { screen: 'homePage' })
     } catch(error) {
       console.error(error)
     }
@@ -166,17 +165,13 @@ const checkoutForm = () => {
       const { paymentIntent } = await response.json();
       console.log("Payment Intent:", paymentIntent);
       return paymentIntent;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Fetch error:", error.message);
     }
   };
   
   
   useEffect(() => {
-    if(goToHomepageFlag) {
-      navigation.navigate('(tabs)', { screen: 'homePage' })
-    }
-
     const checkGooglePayAvailability = async () => {
       const isSupported = await isPlatformPaySupported({
         googlePay: { testEnv: true },

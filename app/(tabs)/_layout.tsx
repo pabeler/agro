@@ -11,8 +11,8 @@ const TabsLayout = () => {
                          tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
                      }}/>
         <Tabs.Screen name='test' options={{
-            title: 'Orders',
-            tabBarIcon: ({ color }) => <FontAwesome size={28} name="truck" color={color} />,
+            title: 'Notifications',
+            tabBarIcon: ({ color }) => <FontAwesome size={28} name="bell" color={color} />,
         }}/>
         <Tabs.Screen name="map" options={
             {
@@ -27,7 +27,16 @@ const TabsLayout = () => {
                 tabBarIcon: ({ color }) => <FontAwesome size={28} name="user" color={color} />,
             }
         }/>
-		<Tabs.Screen name='userCart'/>
+		<Tabs.Screen name='userCart' options={
+            {
+                title: 'Cart',
+                tabBarIcon: ({ color }) => <FontAwesome size={28} name="shopping-cart" color={color} />,
+            }
+        }/>
+        <Tabs.Screen name='orders' options={{
+            title: 'Orders',
+            tabBarIcon: ({ color }) => <FontAwesome size={28} name="truck" color={color} />,
+        }}/>
     </Tabs>
   );
 };
