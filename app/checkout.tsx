@@ -33,6 +33,8 @@ const checkoutForm = () => {
 
   const pay = async () => {
     try {
+      // Fetch the PaymentIntent client secret
+
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
   
@@ -40,93 +42,117 @@ const checkoutForm = () => {
         Alert.alert('Error', 'User is not logged in.');
         return;
       }
-      
-      type SellerAndProducts = {
-        sellerId: string,
-        productIdsQithQuantities: ProductType[]
+
+      const clientSecret = await fetchPaymentIntentClientSecret();
+  
+      if (!clientSecret) {
+        Alert.alert('Error', 'Failed to fetch payment intent client secret.');
+        return;
       }
   
-      let sellers : SellerAndProducts[] = []
+      // Confirm the payment
+      const { error } = await confirmPlatformPayPayment(clientSecret, {
+        googlePay: {
+          testEnv: true,
+          merchantName: 'My merchant name',
+          merchantCountryCode: 'US',
+          currencyCode: 'USD',
+          billingAddressConfig: {
+            format: PlatformPay.BillingAddressFormat.Full,
+            isPhoneNumberRequired: true,
+            isRequired: true,
+          },
+        },
+      });
   
-      for(let item of items!) {
-        let addedProductFlag : boolean = false
-        
-        for(let seller of sellers) {
-          if(seller.sellerId == item.seller_id) {
-            let newProduct : ProductType = {} as ProductType
-            newProduct.productId = item.id
-            newProduct.quantity = item.quantity
-            newProduct.price = item.price
-            seller.productIdsQithQuantities.push(newProduct)
-            addedProductFlag = true
-            break
+      if (error) {
+        // React to payment failure
+        Alert.alert('Payment Failed', error.message);
+        console.error('Payment error:', error.message);
+        return; // Do not proceed with order creation
+      }
+  
+      // Payment was successful, create the order
+  
+      // Group items by seller and create orders
+      type SellerAndProducts = {
+        sellerId: string,
+        productIdsWithQuantities: ProductType[],
+      };
+  
+      let sellers: SellerAndProducts[] = [];
+      for (let item of items!) {
+        let addedProductFlag = false;
+  
+        for (let seller of sellers) {
+          if (seller.sellerId === item.seller_id) {
+            seller.productIdsWithQuantities.push({
+              productId: item.id,
+              quantity: item.quantity,
+              price: item.price,
+            });
+            addedProductFlag = true;
+            break;
           }
         }
   
-        if(!addedProductFlag) {
-          let newSeller : SellerAndProducts = {} as SellerAndProducts
-          newSeller.sellerId = item.seller_id
-          newSeller.productIdsQithQuantities = []
-          sellers.push(newSeller)
-
-          let newProduct : ProductType = {} as ProductType
-          newProduct.productId = item.id
-          newProduct.quantity = item.quantity
-          newProduct.price = item.price
-          newSeller.productIdsQithQuantities.push(newProduct)
+        if (!addedProductFlag) {
+          sellers.push({
+            sellerId: item.seller_id,
+            productIdsWithQuantities: [{
+              productId: item.id,
+              quantity: item.quantity,
+              price: item.price,
+            }],
+          });
         }
       }
   
-      for(let seller of sellers) {
-        let sumForSeller : number = 0
-        for(let product of seller.productIdsQithQuantities) {
-          sumForSeller = sumForSeller + product.price! * product.quantity
+      // Create orders and order items for each seller
+      for (let seller of sellers) {
+        let sumForSeller = 0;
+        for (let product of seller.productIdsWithQuantities) {
+          sumForSeller += product.price * product.quantity;
         }
-        
-        const { data : insertedOrder, error : errorOrder } = await supabase.from('orders').insert({ user_id: userId, status: 'unrealized', total_price: sumForSeller }).select()
-        console.log(insertedOrder)
   
-        for(let product of seller.productIdsQithQuantities) {
-          let insertedOrderData : any = (insertedOrder as any)[0]
-          
-          const { error : errorOrderItem } = await supabase.from('order_items')
-          .insert({ product_id: product.productId, order_id: insertedOrderData.id, quantity: product.quantity, total_price: (product.price! * product.quantity), status: 'unrealized'})
+        const { data: insertedOrder, error: errorOrder } = await supabase
+          .from('orders')
+          .insert({ user_id: userId, status: 'unrealized', total_price: sumForSeller })
+          .select();
+  
+        if (errorOrder) {
+          console.error('Error creating order:', errorOrder.message);
+          continue;
+        }
+  
+        for (let product of seller.productIdsWithQuantities) {
+          const insertedOrderData: any = (insertedOrder as any)[0];
+  
+          const { error: errorOrderItem } = await supabase
+            .from('order_items')
+            .insert({
+              product_id: product.productId,
+              order_id: insertedOrderData.id,
+              quantity: product.quantity,
+              total_price: product.price * product.quantity,
+              status: 'unrealized',
+            });
+  
+          if (errorOrderItem) {
+            console.error('Error creating order item:', errorOrderItem.message);
+          }
         }
       }
-
-      const clientSecret = await fetchPaymentIntentClientSecret();
-
-      const { error } = await confirmPlatformPayPayment(
-        clientSecret,
-        {
-          googlePay: {
-            testEnv: true,
-            merchantName: 'My merchant name',
-            merchantCountryCode: 'US',
-            currencyCode: 'USD',
-            billingAddressConfig: {
-              format: PlatformPay.BillingAddressFormat.Full,
-              isPhoneNumberRequired: true,
-              isRequired: true,
-            },
-          },
-        }
-      );
-
-      console.log("googlepay2")
-
-      if (error) {
-        Alert.alert(error.code, error.message);
-        return;
-      }
-
-      await AsyncStorage.removeItem(PRODUCTS_STORAGE_KEY)
-      Alert.alert('Success', 'Paid for products successfully!')
-      setGoToHomepageFlag(true)
-    } catch(error) {
-      console.error(error)
+  
+      // Clear cart and redirect to the homepage
+      await AsyncStorage.removeItem(PRODUCTS_STORAGE_KEY);
+      Alert.alert('Success', 'Paid for products successfully!');
+      setGoToHomepageFlag(true);
+    } catch (error) {
+      console.error('Payment error:', error.message);
+      Alert.alert('Error', 'An unexpected error occurred during payment.');
     }
-  }
+  };
 
   const fetchPaymentIntentClientSecret = async () => {
     let amountForResponse: number = calculate_sum();
