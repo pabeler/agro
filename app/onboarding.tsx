@@ -115,7 +115,7 @@ const UserProfileForm = () => {
             <Card>
                 <Text style={styles.localizationInputLabel}>Insert your address</Text>
                 <GooglePlacesAutocomplete placeholder={"Your address"} disableScroll={true}
-                                          query={{key: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY, language: 'en'}}
+                                          query={{key: "AIzaSyB3B8DlxEr1Ij1fVGeOv1mtF5N8JVDsti4", language: 'en'}}
                                           fetchDetails={true}
                                           onPress={handleLocalization}
                 />

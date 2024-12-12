@@ -3,7 +3,6 @@ import { Text, View, Button, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import React from 'react';
 
 
 Notifications.setNotificationHandler({
@@ -34,18 +33,8 @@ async function sendPushNotification(expoPushToken: string) {
         },
         body: JSON.stringify(message),
     })
-    /*const rest = await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-            Accept: 'application/json',
-            'Accept-encoding': 'gzip, deflate',
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(message),
-    });*/
     console.log(rest)
 }
-
 
 function handleRegistrationError(errorMessage: string) {
     alert(errorMessage);

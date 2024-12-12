@@ -16,14 +16,14 @@
       "supportsTablet": true
     },
     "android": {
-      "config": {
-        "googleMaps": {
-          "apiKey": ""
-        }
-      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB3B8DlxEr1Ij1fVGeOv1mtF5N8JVDsti4"
+        }
       },
       "googleServicesFile": "./google-services.json",
       "package": "com.pabeler.agro"
@@ -35,6 +35,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-location",
       [
         "@stripe/stripe-react-native",
         {
@@ -45,6 +46,10 @@
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {  "eas": {    "projectId": "0b9d254a-7809-4d0c-8a99-b2ff57b75330"  }}
+    "extra": {
+      "eas": {
+        "projectId": "0b9d254a-7809-4d0c-8a99-b2ff57b75330"
+      }
+    }
   }
 }

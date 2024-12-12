@@ -1,15 +1,31 @@
 import React, {useState} from "react";
 import {useEffect} from "react";
-import {View, StyleSheet, TextInput} from "react-native";
+import {View, StyleSheet, TextInput, Dimensions, Button, TouchableOpacity, Alert} from "react-native";
 import MapView, {Marker, PROVIDER_GOOGLE} from "react-native-maps";
 import {supabase} from "@/lib/supabase";
 import {useNavigation} from "@react-navigation/native";
 import {router} from "expo-router";
+import * as Location from 'expo-location';
+import {Icon} from "@rneui/base";
+import {createDrawerNavigator} from "@react-navigation/drawer";
 
 const MapScreen = () => {
     const navigation = useNavigation();
-    const [markers, setMarkers] = useState<{ productId: string; productName: string; description: string, productPrice: number, productImage: string; coordinate: { latitude: number; longitude: number; } }[]>([]);
+    const [markers, setMarkers] = useState<{
+        productId: string;
+        productName: string;
+        description: string,
+        productPrice: number,
+        productImage: string;
+        coordinate: { latitude: number; longitude: number; }
+    }[]>([]);
     const [searchInput, setSearchInput] = useState('');
+    const [region, setRegion] = useState({
+        latitude: 52.237049,
+        longitude: 19.017532,
+        latitudeDelta: 8,
+        longitudeDelta: 8,
+    });
 
     type ProductComponents = {
         id: number;
@@ -55,43 +71,86 @@ const MapScreen = () => {
         fetchMarkers(searchInput);
     }, [navigation, markers]);
 
-    function handleMarkerPress(marker: {productId: string; productName: string; description: string; productPrice: number; productImage: string; coordinate: {latitude: number; longitude: number}}) {
-        const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(marker.productImage);
-        router.push({ pathname: "/productDetails", params: {
-            productId: marker.productId,
-            productName: marker.productName,
-            productPrice: marker.productPrice.toString(),
-            productImage: image_url.publicUrl,
+    useEffect(() => {
+        const getPermissions = async () => {
+            let {status} = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                console.log("Please grant location permissions");
+                return;
+            }
+        };
+        getPermissions();
+    }, []);
+
+    function handleMarkerPress(marker: {
+        productId: string;
+        productName: string;
+        description: string;
+        productPrice: number;
+        productImage: string;
+        coordinate: { latitude: number; longitude: number }
+    }) {
+        const {data: image_url} = supabase.storage.from("product_images").getPublicUrl(marker.productImage);
+        router.push({
+            pathname: "/productDetails", params: {
+                productId: marker.productId,
+                productName: marker.productName,
+                productPrice: marker.productPrice.toString(),
+                productImage: image_url.publicUrl,
             }
         });
     }
 
+    const goToCurrentLocation = () => {
+        const getCurrentLocation = async () => {
+            let {status} = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert("Location permissions not granted");
+                return;
+            }
+
+            let currLocation = await Location.getCurrentPositionAsync({});
+            console.log("Location:");
+            setRegion({
+                latitudeDelta: 0.5,
+                longitudeDelta: 0.5,
+                latitude: currLocation.coords.latitude,
+                longitude: currLocation.coords.longitude,
+            });
+        }
+        getCurrentLocation();
+    };
+
     return (
         <View style={styles.container}>
-            <MapView style={styles.map} initialRegion={
-                {
-                    latitude: 52.237049,
-                    longitude: 19.017532,
-                    latitudeDelta: 8,
-                    longitudeDelta: 8,
-                }
-            }
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            provider={PROVIDER_GOOGLE}
-
+            <MapView style={{...StyleSheet.absoluteFillObject}}
+                     showsUserLocation={true}
+                     showsMyLocationButton={true}
+                     provider={PROVIDER_GOOGLE}
+                     region={region}
             >
-            {markers.map((marker) => (
-                <Marker
-                    key={marker.productId}
-                    coordinate={marker.coordinate}
-                    title={marker.productName}
-                    description={marker.description}
-                    onCalloutPress={() => handleMarkerPress(marker)}
-                />
-            ))}
+                {markers.map((marker) => (
+                    <Marker
+                        key={marker.productId}
+                        coordinate={marker.coordinate}
+                        title={marker.productName}
+                        description={marker.description}
+                        onCalloutPress={() => handleMarkerPress(marker)}
+                    />
+                ))}
             </MapView>
-            <View style={{ position: 'absolute', top: 10, width: '100%' }}>
+            <TouchableOpacity
+                style={styles.button}
+                onPress={goToCurrentLocation}
+            >
+                <Icon
+                    type="material-community"
+                    name="crosshairs-gps"
+                    size={25}
+                    color="white"
+                />
+            </TouchableOpacity>
+            <View style={{position: 'absolute', top: 10, width: '100%'}}>
                 <TextInput
                     style={{
                         borderRadius: 10,
@@ -123,8 +182,26 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     map: {
-        width: '100%',
-        height: '100%',
+        justifyContent: 'center',
+        position: 'absolute',
+        height: Dimensions.get("window").height,
+        width: Dimensions.get("window").width
+    },
+    button: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        backgroundColor: '#007AFF',
+        borderRadius: 30,
+        width: 50,
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 5,
     },
 });
 
