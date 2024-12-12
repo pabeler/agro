@@ -71,7 +71,7 @@ const UserEmailScreen = () => {
         <Button title="Add product" onPress={() => router.push('/addProduct')} buttonStyle={styles.button} />
       </View>
       <View style={styles.verticallySpaced}>
-        <Button title="Panel sprzedawcy" onPress={() => router.push('/sellerPanel')} buttonStyle={styles.button} />
+        <Button title="My products" onPress={() => router.push('/sellerPanel')} buttonStyle={styles.button} />
       </View>
       <View style={styles.verticallySpaced}>
         <Button title="Sign Out" onPress={handleSignOut} buttonStyle={styles.button} />

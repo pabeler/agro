@@ -76,7 +76,7 @@ const SellerPanel = () => {
   };
 
   const handleDeleteProduct = async (productId: number) => {
-    Alert.alert("Potwierdzenie", "Czy na pewno chcesz usunąć ten produkt?", [
+    Alert.alert("Confirmation", "Are you sure you want to delete this product?", [
       { text: "Anuluj", style: "cancel" },
       {
         text: "Usuń",
@@ -91,7 +91,7 @@ const SellerPanel = () => {
             if (error) {
               Alert.alert("Error", "Failed to delete product.");
             } else {
-              Alert.alert("Sukces", "Produkt został usunięty.");
+              Alert.alert("Sukces", "Product has been removed.");
               setProducts((prev) =>
                 prev.filter((product) => product.id !== productId)
               );
@@ -107,21 +107,12 @@ const SellerPanel = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Panel Sprzedawcy</Text>
+      <Text style={styles.header}>My products</Text>
 
       {loading ? (
-        <Text>Ładowanie danych...</Text>
+        <Text>Loading data...</Text>
       ) : (
         <>
-          {/* Sekcja statystyk */}
-          <Card containerStyle={styles.card}>
-            <Text style={styles.statsText}>
-              Sprzedane produkty: {salesStats.totalSold}
-            </Text>
-            <Text style={styles.statsText}>
-              Łączny dochód: {salesStats.totalRevenue} zł
-            </Text>
-          </Card>
 
           {/* Lista produktów */}
           <FlatList
@@ -143,8 +134,8 @@ const SellerPanel = () => {
         {/* Szczegóły produktu */}
         <View style={styles.productDetails}>
           <Text style={styles.productTitle}>{item.product_name}</Text>
-          <Text style={styles.productInfo}>Cena: {item.price} zł</Text>
-          <Text style={styles.productInfo}>Na stanie: {item.stock_quantity}</Text>
+          <Text style={styles.productInfo}>Price: {item.price} zł</Text>
+          <Text style={styles.productInfo}>Stock: {item.stock_quantity}</Text>
         </View>
       </View>
 
