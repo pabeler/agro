@@ -5,11 +5,13 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  ScrollView
 } from "react-native";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 import { Button } from "@rneui/themed";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PRODUCTS_STORAGE_KEY, ProductType } from "../lib/utils"
 
 type ProductDetailsRouteParams = {
   productId: string;
@@ -25,6 +27,59 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [description, setDescription] = useState<string | null>(null);
   const [stockQuantity, setStockQuantity] = useState<number | null>(null);
+
+  const addToCart = async () => {
+    try {
+      const savedProductValues = await AsyncStorage.getItem(PRODUCTS_STORAGE_KEY);
+
+      if(savedProductValues == null) {
+        let listOfProductsToSave : ProductType[] = []
+        let productToSave : ProductType = {} as ProductType
+        productToSave.productId = Number(productId)
+        productToSave.quantity = quantity
+        listOfProductsToSave.push(productToSave)
+        let jsonString : string = JSON.stringify(listOfProductsToSave)
+        await AsyncStorage.setItem(PRODUCTS_STORAGE_KEY, jsonString)
+        return
+      }
+
+      let listOfProductsToSave : ProductType[] = []
+      let productBeingSavedId : number = Number(productId)
+      let productsAsJson = JSON.parse(savedProductValues);
+      let savedNewElementFlag : boolean = false
+
+      console.log('Old Values:', productsAsJson)
+
+      productsAsJson.forEach((element: ProductType) => {
+        let productIdFromJson : number = element.productId
+        let productQuantityFromJson : number = element.quantity
+
+        if(productIdFromJson == productBeingSavedId) {
+          let newQuantity = Math.min(productQuantityFromJson + quantity, Number(stockQuantity))
+          let newElement : ProductType = {} as ProductType
+          newElement.productId = productIdFromJson
+          newElement.quantity = newQuantity
+          listOfProductsToSave.push(newElement)
+          savedNewElementFlag = true
+        } else {
+          listOfProductsToSave.push(element)
+        }
+      });
+
+      if(!savedNewElementFlag) {
+        let productToSave : ProductType = {} as ProductType
+        productToSave.productId = Number(productId)
+        productToSave.quantity = quantity
+        listOfProductsToSave.push(productToSave)
+      }
+
+      let jsonString : string = JSON.stringify(listOfProductsToSave)
+      await AsyncStorage.setItem(PRODUCTS_STORAGE_KEY, jsonString)
+      console.log('New Values:', jsonString)
+    } catch(error) {
+      console.error(error)
+    }
+  }
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -91,7 +146,7 @@ const ProductDetails = () => {
       </ScrollView>
 
       <View style={styles.addToCartContainer}>
-        <Button title="Add to Cart" buttonStyle={styles.button} />
+        <Button title="Add to Cart" buttonStyle={styles.button} onPress={() => {addToCart()}}/>
       </View>
     </View>
   );

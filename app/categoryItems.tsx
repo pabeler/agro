@@ -51,6 +51,32 @@ const CategoryItems = () => {
               <View style={style.AllItemsContainer}>
                 {
                   items?.map((item, id) => {
+                    const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+
+                    return <TouchableOpacity style={style.ItemContainer} key={id} onPress={() => 
+                      navigation.navigate("productDetails", {
+                        productId: item.id,
+                        productName: item.product_name,
+                        productPrice: item.price,
+                        productImage: item.image_path ? image_url.publicUrl : null,
+                      })}>
+                        <View style={style.Item}>
+                        
+                        {
+                          (item.image_path != null) ?
+                          (
+                            <Image style={style.ItemImage} source={{ uri: image_url.publicUrl }}></Image>
+                          ) : 
+                          (
+                            <Image style={style.ItemImage} source={require('../assets/samples/question.png')}></Image>
+                          )
+                        }
+                      
+                        <Text style={style.TextDescription}>{item.product_name}</Text>
+                        <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                      </View>
+                      </TouchableOpacity>
+                    
                     if(item.image_path != null) {
                       const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
                     

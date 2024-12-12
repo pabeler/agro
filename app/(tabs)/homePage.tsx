@@ -101,33 +101,29 @@ const Screen = () => {
           <ScrollView style={style.BestsellersContainer} horizontal={true}>
             {
               bestsellers?.map((item, id) => {
-                if(item.image_path != null) {
-                  const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+                const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+                
+                return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
+                  navigation.navigate("productDetails", {
+                    productId: item.id,
+                    productName: item.product_name,
+                    productPrice: item.price,
+                    productImage: item.image_path ? image_url.publicUrl : null,
+                  })}>
                   
-                  return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
-                    navigation.navigate("productDetails", {
-                      productId: item.id,
-                      productName: item.product_name,
-                      productPrice: item.price,
-                      productImage: item.image_path ? image_url.publicUrl : null,
-                    })}>
-                    <Image style={style.BestsellerImage} source={{ uri: image_url.publicUrl }}></Image>
-                    <Text style={style.TextDescription}>{item.product_name}</Text>
-                    <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
-                    </TouchableOpacity>
-                } else {
-                  return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
-                    navigation.navigate("productDetails", {
-                      productId: item.id,
-                      productName: item.product_name,
-                      productPrice: item.price,
-                      productImage: null,
-                    })}>
-                    <Image style={style.BestsellerImage} source={require('../../assets/samples/question.png')}></Image>
-                    <Text style={style.TextDescription}>{item.product_name}</Text>
-                    <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
-                    </TouchableOpacity>
-                }
+                  {
+                    (item.image_path != null) ?
+                    (
+                      <Image style={style.BestsellerImage} source={{ uri: image_url.publicUrl }}></Image>
+                    ) :
+                    (
+                      <Image style={style.BestsellerImage} source={require('../../assets/samples/question.png')}></Image>
+                    )
+                  }
+                  
+                  <Text style={style.TextDescription}>{item.product_name}</Text>
+                  <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                </TouchableOpacity>
               })
             }
           </ScrollView>
@@ -137,33 +133,29 @@ const Screen = () => {
           <ScrollView style={style.BestsellersContainer} horizontal={true}>
             {
               newItems?.map((item, id) => {
-                if(item.image_path != null) {
-                  const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+                const {data:image_url} = supabase.storage.from("product_images").getPublicUrl(item.image_path);
+                
+                return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
+                  navigation.navigate("productDetails", {
+                    productId: item.id,
+                    productName: item.product_name,
+                    productPrice: item.price,
+                    productImage: item.image_path ? image_url.publicUrl : null,
+                  })}>
+
+                  {
+                    (item.image_path != null) ?
+                    (
+                      <Image style={style.BestsellerImage} source={{ uri: image_url.publicUrl }}></Image>
+                    ) :
+                    (
+                      <Image style={style.BestsellerImage} source={require('../../assets/samples/question.png')}></Image>
+                    )
+                  }
                   
-                  return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
-                    navigation.navigate("productDetails", {
-                      productId: item.id,
-                      productName: item.product_name,
-                      productPrice: item.price,
-                      productImage: item.image_path ? image_url.publicUrl : null,
-                    })}>
-                    <Image style={style.BestsellerImage} source={{ uri: image_url.publicUrl }}></Image>
-                    <Text style={style.TextDescription}>{item.product_name}</Text>
-                    <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
-                    </TouchableOpacity>
-                } else {
-                  return <TouchableOpacity style={style.BestsellerView} key={id} onPress={() => 
-                    navigation.navigate("productDetails", {
-                      productId: item.id,
-                      productName: item.product_name,
-                      productPrice: item.price,
-                      productImage:  null,
-                    })}>
-                    <Image style={style.BestsellerImage} source={require('../../assets/samples/question.png')}></Image>
-                    <Text style={style.TextDescription}>{item.product_name}</Text>
-                    <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
-                    </TouchableOpacity>
-                }
+                  <Text style={style.TextDescription}>{item.product_name}</Text>
+                  <Text style={style.TextDescription}>{priceWithTrailingZerosAndDollar(item.price)}</Text>
+                </TouchableOpacity>
               })
             }
           </ScrollView>
