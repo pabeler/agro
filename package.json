@@ -24,6 +24,7 @@
     "@stripe/stripe-react-native": "^0.40.0",
     "@supabase/supabase-js": "^2.45.4",
     "axios": "^1.7.8",
+    "dotenv": "^16.4.7",
     "expo": "~51.0.28",
     "expo-constants": "~16.0.2",
     "expo-dev-client": "~4.0.28",
