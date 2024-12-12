@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { Button, Input } from '@rneui/themed';
-import { Href, Link, router } from 'expo-router';
+import { router } from 'expo-router';
 
 const UserEmailScreen = () => {
   const [email, setEmail] = useState<string | null>(null);
@@ -68,7 +68,10 @@ const UserEmailScreen = () => {
         <Text style={{ fontSize: 18, marginTop: 10 }}>Ładowanie...</Text>
       )}
       <View style={styles.verticallySpaced}>
-        <Button title="Add product" onPress={()=> router.push('/addProduct')} buttonStyle={styles.button} />
+        <Button title="Add product" onPress={() => router.push('/addProduct')} buttonStyle={styles.button} />
+      </View>
+      <View style={styles.verticallySpaced}>
+        <Button title="Panel sprzedawcy" onPress={() => router.push('/sellerPanel')} buttonStyle={styles.button} />
       </View>
       <View style={styles.verticallySpaced}>
         <Button title="Sign Out" onPress={handleSignOut} buttonStyle={styles.button} />
