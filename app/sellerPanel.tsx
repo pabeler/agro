@@ -124,10 +124,10 @@ const SellerPanel = () => {
 
 <Card containerStyle={styles.card}>
             <Text style={styles.statsText}>
-              Sprzedane produkty: {salesStats.totalSold}
+              Products sold: {salesStats.totalSold}
             </Text>
             <Text style={styles.statsText}>
-              Łączny dochód: {salesStats.totalRevenue} zł
+              Total income: {salesStats.totalRevenue} PLN
             </Text>
           </Card>
 
@@ -151,7 +151,7 @@ const SellerPanel = () => {
         {/* Szczegóły produktu */}
         <View style={styles.productDetails}>
           <Text style={styles.productTitle}>{item.product_name}</Text>
-          <Text style={styles.productInfo}>Price: {item.price} zł</Text>
+          <Text style={styles.productInfo}>Price: {item.price} PLN</Text>
           <Text style={styles.productInfo}>Stock: {item.stock_quantity}</Text>
         </View>
       </View>
@@ -159,12 +159,12 @@ const SellerPanel = () => {
       {/* Przyciski */}
       <View style={styles.actionButtons}>
         <Button
-          title="Edytuj"
+          title="Edit"
           onPress={() => handleEditProduct(item.id)}
           buttonStyle={styles.editButton}
         />
         <Button
-          title="Usuń"
+          title="Delete"
           onPress={() => handleDeleteProduct(item.id)}
           buttonStyle={styles.deleteButton}
         />
