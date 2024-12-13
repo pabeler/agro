@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "agro",
+    "slug": "agro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB3B8DlxEr1Ij1fVGeOv1mtF5N8JVDsti4"
+        }
+      },
+      "googleServicesFile": "./google-services.json",
+      "package": "com.pabeler.agro"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-location",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "enableGooglePay": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0b9d254a-7809-4d0c-8a99-b2ff57b75330"
+      }
+    }
+  }
+}
