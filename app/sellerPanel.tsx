@@ -122,6 +122,15 @@ const SellerPanel = () => {
       ) : (
         <>
 
+<Card containerStyle={styles.card}>
+            <Text style={styles.statsText}>
+              Sprzedane produkty: {salesStats.totalSold}
+            </Text>
+            <Text style={styles.statsText}>
+              Łączny dochód: {salesStats.totalRevenue} zł
+            </Text>
+          </Card>
+
           {/* Lista produktów */}
           <FlatList
   data={products}
