@@ -132,7 +132,7 @@ const AddProduct = () => {
             const {error} = await supabase.from('products').insert([
                 {
                     product_name: title,
-                    category_id: categories.indexOf(selectedCategory!) + 1,
+                    category_id: categories.indexOf(selectedCategory!) + 2,
                     price: parseFloat(price),
                     stock_quantity: parseFloat(amount),
                     seller_id: userId,
