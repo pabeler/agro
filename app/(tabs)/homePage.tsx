@@ -1,12 +1,13 @@
 import { Feather } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ScrollView, View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../../lib/supabase';
 import { priceWithTrailingZerosAndDollar } from '../../lib/utils';
 import React from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
 const Screen = () => {
     const [searchInput, setSearchInput] = useState("")
@@ -22,9 +23,11 @@ const Screen = () => {
         navigation.push("categoryItems", {category: category})
     }
 
-    useEffect(() => {
-        load_data?.()
-    }, []);
+    useFocusEffect(
+      useCallback(() => {
+        load_data();
+      }, [])
+    );
 
     const load_data = async () => {
         let MAX_RESULTS: number = 5

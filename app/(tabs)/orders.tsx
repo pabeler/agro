@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { supabase } from "../../lib/supabase";
 import { priceWithTrailingZerosAndDollar } from "../../lib/utils"
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 
 let loadNewOrders: boolean = true
 
@@ -25,9 +26,13 @@ const Orders = () => {
     
   }
   
-  useEffect(() => {
-    load_data()
-  }, []);
+
+
+    useFocusEffect(
+      useCallback(() => {
+        load_data();
+      }, [])
+    );
   
   return (
       <View style={styles.container}>
